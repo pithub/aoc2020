@@ -3,38 +3,24 @@ interface Day02 exposes [ output ] imports [ TestUtil ]
 
 output : List (List Int)
 output =
-    [ TestUtil.verify 2 1 1 (validCount1 testInput) 2
-    , TestUtil.show   2 1   realCount1
-    , TestUtil.verify 2 2 1 (validCount2 testInput) 1
-    , TestUtil.show   2 2   realCount2
+    [ TestUtil.verify 2 1 1 (validCount1    testInput ) 2
+    , TestUtil.show   2 1   (validCount1Sum realInputs)
+    , TestUtil.verify 2 2 1 (validCount2    testInput ) 1
+    , TestUtil.show   2 2   (validCount2Sum realInputs)
     ]
 
 
-realCount1 : Int
-realCount1 =
-    validCount1 realInput1 +
-    validCount1 realInput2 +
-    validCount1 realInput3 +
-    validCount1 realInput4 +
-    validCount1 realInput5 +
-    validCount1 realInput6 +
-    validCount1 realInput7 +
-    validCount1 realInput8
-
-
-realCount2 : Int
-realCount2 =
-    validCount2 realInput1 +
-    validCount2 realInput2 +
-    validCount2 realInput3 +
-    validCount2 realInput4 +
-    validCount2 realInput5 +
-    validCount2 realInput6 +
-    validCount2 realInput7 +
-    validCount2 realInput8
-
-
 Line : List Int
+
+
+validCount1Sum : List (List Line) -> Int
+validCount1Sum = \chunks ->
+    chunks |> List.map validCount1 |> List.sum
+
+
+validCount2Sum : List (List Line) -> Int
+validCount2Sum = \chunks ->
+    chunks |> List.map validCount2 |> List.sum
 
 
 validCount1 : List Line -> Int
@@ -65,20 +51,9 @@ countValid2 = \line, count ->
 
 isValid1 : Line -> Bool
 isValid1 = \line ->
-    min = #getField line 0
-        when List.get line 0 is
-            Ok n -> -n
-            _ -> 0
-
-    max = #getField line 1
-        when List.get line 1 is
-            Ok n -> -n
-            _ -> 0
-
-    element = #getField line 2
-        when List.get line 2 is
-            Ok n -> -n
-            _ -> 0
+    min = getValidationParameter line 0
+    max = getValidationParameter line 1
+    element = getValidationParameter line 2
 
     given = countMember line element
     (min <= given) && (given <= max)
@@ -86,48 +61,37 @@ isValid1 = \line ->
 
 countMember : List Int, Int -> Int
 countMember = \list, element ->
-    mapper = \e -> e - element
-
-    counter = \e, count ->
-        if e == 0 then
-            count + 1
-        else
-            count
-
-    list |> List.map mapper |> List.walk counter 0
+    mapper = \e -> if e == element then 1 else 0
+    list |> List.map mapper |> List.sum
 
 
 isValid2 : Line -> Bool
 isValid2 = \line ->
-    pos1 = #getField line 0
-        when List.get line 0 is
-            Ok n -> 2 - n
-            _ -> 0
+    pos1 = getValidationParameter line 0
+    pos2 = getValidationParameter line 1
+    element = getValidationParameter line 2
 
-    val1 = #getField line 0
-        when List.get line pos1 is
-            Ok n -> n
-            _ -> 0
-
-    pos2 = #getField line 1
-        when List.get line 1 is
-            Ok n -> 2 - n
-            _ -> 0
-
-    val2 = #getField line 0
-        when List.get line pos2 is
-            Ok n -> n
-            _ -> 0
-
-    element = #getField line 2
-        when List.get line 2 is
-            Ok n -> -n
-            _ -> 0
+    val1 = getPasswordChar line pos1
+    val2 = getPasswordChar line pos2
 
     (val1 == element) != (val2 == element)
 
 
-testInput : List (List Int)
+getValidationParameter : Line, Int -> Int
+getValidationParameter = \line, position ->
+    when List.get line position is
+        Ok n -> -n
+        _ -> 0
+
+
+getPasswordChar : Line, Int -> Int
+getPasswordChar = \line, position ->
+    when List.get line (position + 2) is
+        Ok n -> n
+        _ -> 0
+
+
+testInput : List Line
 testInput =
     [ [ -1, -3, -1, 1, 2, 3, 4, 5 ]
     , [ -1, -3, -2, 3, 4, 5, 6, 7 ]
@@ -135,7 +99,20 @@ testInput =
     ]
 
 
-realInput1 : List (List Int)
+realInputs : List (List Line)
+realInputs =
+    [ realInput1
+    , realInput2
+    , realInput3
+    , realInput4
+    , realInput5
+    , realInput6
+    , realInput7
+    , realInput8
+    ]
+
+
+realInput1 : List Line
 realInput1 =
     [ [ -15, -19, -11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 26, 11, 11, 11, 11, 11, 11, 11 ]
     , [ -1, -11, -19, 19, 2, 19, 19, 19, 23, 19, 17, 19, 19, 19, 19, 19, 18, 12, 19, 19 ]
@@ -265,7 +242,7 @@ realInput1 =
     ]
 
 
-realInput2 : List (List Int)
+realInput2 : List Line
 realInput2 =
     [ [ -1, -11, -19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19 ]
     , [ -13, -14, -22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 6 ]
@@ -395,7 +372,7 @@ realInput2 =
     ]
 
 
-realInput3 : List (List Int)
+realInput3 : List Line
 realInput3 =
     [ [ -9, -18, -19, 19, 19, 19, 19, 19, 19, 19, 19, 12, 19, 19, 19, 19, 19, 19, 2, 19, 19, 19 ]
     , [ -7, -8, -14, 14, 14, 14, 14, 14, 14, 14, 14, 14 ]
@@ -525,7 +502,7 @@ realInput3 =
     ]
 
 
-realInput4 : List (List Int)
+realInput4 : List Line
 realInput4 =
     [ [ -13, -15, -24, 11, 24, 24, 24, 8, 24, 24, 22, 24, 24, 24, 20, 14, 7, 24, 24, 24, 24, 24, 24 ]
     , [ -4, -5, -16, 16, 16, 16, 22, 22, 20, 14, 3, 16 ]
@@ -655,7 +632,7 @@ realInput4 =
     ]
 
 
-realInput5 : List (List Int)
+realInput5 : List Line
 realInput5 =
     [ [ -9, -11, -8, 8, 8, 8, 22, 8, 8, 8, 8, 22, 8, 8, 24, 8, 8, 8, 18, 18 ]
     , [ -3, -5, -24, 24, 24, 24, 24, 23 ]
@@ -785,7 +762,7 @@ realInput5 =
     ]
 
 
-realInput6 : List (List Int)
+realInput6 : List Line
 realInput6 =
     [ [ -2, -4, -24, 26, 24, 12, 24 ]
     , [ -5, -6, -10, 24, 10, 10, 10, 23, 10 ]
@@ -915,7 +892,7 @@ realInput6 =
     ]
 
 
-realInput7 : List (List Int)
+realInput7 : List Line
 realInput7 =
     [ [ -14, -15, -2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 20, 11 ]
     , [ -2, -7, -14, 14, 14, 14, 14, 3, 14, 14 ]
@@ -1045,7 +1022,7 @@ realInput7 =
     ]
 
 
-realInput8 : List (List Int)
+realInput8 : List Line
 realInput8 =
     [ [ -10, -11, -3, 3, 3, 3, 3, 22, 3, 3, 3, 3, 7, 3 ]
     , [ -7, -8, -24, 24, 24, 24, 24, 24, 24, 8, 24, 24, 24, 24, 24, 24, 24 ]
