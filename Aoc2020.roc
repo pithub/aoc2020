@@ -1,9 +1,11 @@
-app "aoc2020" imports [ Day05.{ output } ] provides [ aocMain ] to "./platform"
+app "aoc2020" imports [ Effect, Day06 ] provides [ aocMain ] to "./platform"
 
 
-aocMain : List (List Int)
+aocMain : Effect.Effect {} as Fx
 aocMain =
-    output
+    Effect.readFile "Day06.txt"
+        |> Effect.after (\input -> Day06.output input
+            |> Effect.writeData )
 
 
 #  Day  Answers            Topic
