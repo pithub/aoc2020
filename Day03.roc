@@ -12,48 +12,49 @@ output = \puzzleInput ->
 
 combinedTreeCount1 : List Int -> Int
 combinedTreeCount1 = \cells ->
-    dim = Map2.size cells
-    treeCount cells dim 3 1
+    inf = Map2.info cells 0
+    treeCount cells inf 3 1
 
 
 combinedTreeCount2 : List Int -> Int
 combinedTreeCount2 = \cells ->
-    dim = Map2.size cells
-    (treeCount cells dim 1 1) *
-    (treeCount cells dim 3 1) *
-    (treeCount cells dim 5 1) *
-    (treeCount cells dim 7 1) *
-    (treeCount cells dim 1 2)
+    inf = Map2.info cells 0
+    (treeCount cells inf 1 1) *
+    (treeCount cells inf 3 1) *
+    (treeCount cells inf 5 1) *
+    (treeCount cells inf 7 1) *
+    (treeCount cells inf 1 2)
 
 
-treeCount : List Int, Map2.Dim2, Int, Int -> Int
-treeCount = \cells, dim, right, down ->
-    treeCountHelper cells dim right down 0 0 0
+treeCount : List Int, Map2.Inf2, Int, Int -> Int
+treeCount = \cells, inf, right, down ->
+    treeCountHelper cells inf right down 0 0 0
 
 
-treeCountHelper : List Int, Map2.Dim2, Int, Int, Int, Int, Int -> Int
-treeCountHelper = \cells, dim, right, down, x, y, count ->
-    idx = Map2.index dim y x
-    when List.get cells idx is
-        Ok cell ->
-            nextCount =
-                if cell == 35 then
-                    count + 1
-                else
-                    count
+treeCountHelper : List Int, Map2.Inf2, Int, Int, Int, Int, Int -> Int
+treeCountHelper = \cells, inf, right, down, x, y, count ->
+    if y < inf.rows then
+        cell = Map2.getI cells inf y x
 
-            nextY = y + down
+        nextCount =
+            if cell == 35 then
+                count + 1
+            else
+                count
 
-            incX = x + right
-            nextX =
-                if incX < dim.cols then
-                    incX
-                else
-                    incX - dim.cols
+        nextY = y + down
 
-            treeCountHelper cells dim right down nextX nextY nextCount
+        incX = x + right
+        nextX =
+            if incX < inf.cols then
+                incX
+            else
+                incX - inf.cols
 
-        _ -> count
+        treeCountHelper cells inf right down nextX nextY nextCount
+
+    else
+        count
 
 
 testInput : List Int

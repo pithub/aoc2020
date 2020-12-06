@@ -1,11 +1,11 @@
-interface Map2 exposes [ Dim2, size, index ] imports []
+interface Map2 exposes [ Inf2, info, getI ] imports []
 
 
-Dim2 : { rows : Int, cols : Int }
+Inf2 : { rows : Int, cols : Int, default : Int }
 
 
-size : List Int -> Dim2
-size = \cells ->
+info : List Int, Int -> Inf2
+info = \cells, default ->
     colsHelper = \c, i ->
         when List.get c i is
             Ok 10 -> i
@@ -18,9 +18,22 @@ size = \cells ->
             Ok n -> n
             _ -> 0
     
-    { rows, cols }
+    { rows, cols, default }
 
 
-index : Dim2, Int, Int -> Int
-index = \dim, row, col ->
-    dim.cols * row + row + col
+getI : List Int, Inf2, Int, Int -> Int
+getI = \cells, inf, row, col ->
+    when index inf row col is
+        Ok idx ->
+            when List.get cells idx is
+                Ok val -> val
+                _ -> inf.default
+        _ -> inf.default
+
+
+index : Inf2, Int, Int -> Result Int {}
+index = \inf, row, col ->
+    if row < 0 || col < 0 || row >= inf.rows || col >= inf.cols then
+        Err {}
+    else
+        Ok (inf.cols * row + row + col)
