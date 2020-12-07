@@ -1,10 +1,10 @@
-app "aoc2020" imports [ Effect, Day06 ] provides [ aocMain ] to "./platform"
+app "aoc2020" imports [ Effect, Day07 ] provides [ aocMain ] to "./platform"
 
 
 aocMain : Effect.Effect {} as Fx
 aocMain =
-    Effect.readFile "Day06.txt"
-        |> Effect.after (\input -> Day06.output input
+    Effect.readFile "Day07.txt"
+        |> Effect.after (\input -> Day07.output input
             |> Effect.writeData )
 
 
@@ -16,3 +16,4 @@ aocMain =
 #   04  230, 156           valid passports
 #   05  963, 592           seats in airplane
 #   06  6387, 3039         questionnaire answers
+#   07  316, 11310         nested bags
