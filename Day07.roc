@@ -1,7 +1,7 @@
 interface Day07 exposes [ output ] imports [ TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \puzzleInput ->
     testMatrix1  = buildMatrix  10 testInput1
     testMatrix2  = buildMatrix   8 testInput2
@@ -18,13 +18,13 @@ output = \puzzleInput ->
 # count outer bags
 
 
-outerBags : Int, Int, List Int -> Int
+outerBags : I64, I64, List I64 -> I64
 outerBags = \num, len, matrix ->
     counted = List.repeat len 0
     outerBagsHelper len matrix counted [ num ] num 0 [] 1
 
 
-outerBagsHelper : Int, List Int, List Int, List Int, Int, Int, List Int, Int -> Int
+outerBagsHelper : I64, List I64, List I64, List I64, I64, I64, List I64, I64 -> I64
 outerBagsHelper = \len, matrix, counted, current, curVal, curIdx, next, parent ->
     if parent < len then
         newParent = parent + 1
@@ -59,14 +59,14 @@ outerBagsHelper = \len, matrix, counted, current, curVal, curIdx, next, parent -
 # count inner bags
 
 
-innerBags : Int, Int, List Int -> Int
+innerBags : I64, I64, List I64 -> I64
 innerBags = \num, len, matrix ->
     current = List.repeat len 0
     next = List.repeat len 0
     innerBagsHelper len matrix 0 current 1 num next 1
 
 
-innerBagsHelper : Int, List Int, Int, List Int, Int, Int, List Int, Int -> Int
+innerBagsHelper : I64, List I64, I64, List I64, I64, I64, List I64, I64 -> I64
 innerBagsHelper = \len, matrix, total, current, curVal, curIdx, next, child ->
     if child < len then
         newChild = child + 1
@@ -99,7 +99,7 @@ innerBagsHelper = \len, matrix, total, current, curVal, curIdx, next, child ->
                     total
 
 
-addCount : List Int, Int, Int -> List Int
+addCount : List I64, I64, I64 -> List I64
 addCount = \counts, idx, val ->
     when List.get counts idx is
         Ok oldCount ->
@@ -111,7 +111,7 @@ addCount = \counts, idx, val ->
 # create N:M container matrix
 
 
-buildMatrix : Int, List Int -> List Int
+buildMatrix : I64, List I64 -> List I64
 buildMatrix = \len, input ->
     initial =
         { current: 0
@@ -124,10 +124,10 @@ buildMatrix = \len, input ->
     final.parents
 
 
-MatrixAcc : { current : Int, outer : Int, count : Int, parents : List Int, length : Int }
+MatrixAcc : { current : I64, outer : I64, count : I64, parents : List I64, length : I64 }
 
 
-walker : Int, MatrixAcc -> MatrixAcc
+walker : I64, MatrixAcc -> MatrixAcc
 walker = \val, acc ->
     when val is
         58 ->
@@ -151,7 +151,7 @@ walker = \val, acc ->
             { acc & current: newCurrent }
 
 
-index : Int, Int, Int -> Int
+index : I64, I64, I64 -> I64
 index = \len, inner, outer ->
     inner * len + outer
 
@@ -159,7 +159,7 @@ index = \len, inner, outer ->
 #  test data
 
 
-testInput1 : List Int
+testInput1 : List I64
 testInput1 =
     [ 49, 58, 49, 124, 56, 60, 10
     , 50, 58, 51, 124, 53, 60, 52, 124, 52, 60, 10
@@ -173,7 +173,7 @@ testInput1 =
     ]
 
 
-testInput2 : List Int
+testInput2 : List I64
 testInput2 =
     [ 49, 58, 50, 124, 50, 60, 10
     , 50, 58, 50, 124, 51, 60, 10

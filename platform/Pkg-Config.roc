@@ -1,13 +1,13 @@
 platform pithub/aoc2020
     requires { aocMain : Effect {} }
-    exposes []
+    exposes [ Task ]
     packages {}
     imports []
     provides [ mainForHost ]
     effects Effect
         {
-            readFile : Str -> Effect (List Int),
-            writeData : List (List Int) -> Effect {}
+            readFile : Str -> Effect (List I64),
+            writeData : List (List I64) -> Effect {}
         }
 
 mainForHost : Effect {} as Fx

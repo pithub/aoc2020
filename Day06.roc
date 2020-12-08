@@ -1,7 +1,7 @@
 interface Day06 exposes [ output ] imports [ TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \puzzleInput ->
     [ TestUtil.verify 6 1 1 (groupSum Any testInput1 ) 6
     , TestUtil.verify 6 1 2 (groupSum Any testInput2 ) 11
@@ -14,7 +14,7 @@ output = \puzzleInput ->
 Mode : [ Any, All ]
 
 
-groupSum : Mode, List Int -> Int
+groupSum : Mode, List I64 -> I64
 groupSum = \mode, input ->
     initial = initialAcc mode
     last = List.walk input groupSumWalker initial
@@ -22,7 +22,7 @@ groupSum = \mode, input ->
     final.sum
 
 
-Acc : { sum : Int, answers : List Int, passengers : Int, inGroup : Bool, mode : Mode }
+Acc : { sum : I64, answers : List I64, passengers : I64, inGroup : Bool, mode : Mode }
 
 
 initialAcc : Mode -> Acc
@@ -30,12 +30,12 @@ initialAcc = \mode ->
     { sum: 0, answers: initialAnswers {}, passengers : 0, inGroup: False, mode }
 
 
-initialAnswers : {} -> List Int
+initialAnswers : {} -> List I64
 initialAnswers = \_ ->
     [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
 
 
-groupSumWalker : Int, Acc -> Acc
+groupSumWalker : I64, Acc -> Acc
 groupSumWalker = \val, acc ->
     if val == 10 then
         if acc.inGroup then
@@ -46,7 +46,7 @@ groupSumWalker = \val, acc ->
         addAnswer acc val
 
 
-addAnswer : Acc, Int -> Acc
+addAnswer : Acc, I64 -> Acc
 addAnswer = \acc, val ->
     index = val - 97
 
@@ -86,7 +86,7 @@ finishGroup = \acc ->
     }
 
 
-testInput1 : List Int
+testInput1 : List I64
 testInput1 =
     [ 97, 98, 99, 120, 10
     , 97, 98, 99, 121, 10
@@ -94,7 +94,7 @@ testInput1 =
     ]
 
 
-testInput2 : List Int
+testInput2 : List I64
 testInput2 =
     [ 97, 98, 99, 10
     , 10

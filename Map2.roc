@@ -1,10 +1,10 @@
 interface Map2 exposes [ Inf2, info, getI ] imports []
 
 
-Inf2 : { rows : Int, cols : Int, default : Int }
+Inf2 : { rows : I64, cols : I64, default : I64 }
 
 
-info : List Int, Int -> Inf2
+info : List I64, I64 -> Inf2
 info = \cells, default ->
     colsHelper = \c, i ->
         when List.get c i is
@@ -21,7 +21,7 @@ info = \cells, default ->
     { rows, cols, default }
 
 
-getI : List Int, Inf2, Int, Int -> Int
+getI : List I64, Inf2, I64, I64 -> I64
 getI = \cells, inf, row, col ->
     when index inf row col is
         Ok idx ->
@@ -31,7 +31,7 @@ getI = \cells, inf, row, col ->
         _ -> inf.default
 
 
-index : Inf2, Int, Int -> Result Int {}
+index : Inf2, I64, I64 -> Result I64 {}
 index = \inf, row, col ->
     if row < 0 || col < 0 || row >= inf.rows || col >= inf.cols then
         Err {}

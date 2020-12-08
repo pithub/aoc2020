@@ -1,7 +1,7 @@
 interface Day02 exposes [ output ] imports [ TestUtil ]
 
 
-output : List (List Int)
+output : List (List I64)
 output =
     [ TestUtil.verify 2 1 1 (validCount1    testInput ) 2
     , TestUtil.show   2 1   (validCount1Sum realInputs)
@@ -10,30 +10,30 @@ output =
     ]
 
 
-Line : List Int
+Line : List I64
 
 
-validCount1Sum : List (List Line) -> Int
+validCount1Sum : List (List Line) -> I64
 validCount1Sum = \chunks ->
     chunks |> List.map validCount1 |> List.sum
 
 
-validCount2Sum : List (List Line) -> Int
+validCount2Sum : List (List Line) -> I64
 validCount2Sum = \chunks ->
     chunks |> List.map validCount2 |> List.sum
 
 
-validCount1 : List Line -> Int
+validCount1 : List Line -> I64
 validCount1 = \lines ->
     List.walk lines countValid1 0
 
 
-validCount2 : List Line -> Int
+validCount2 : List Line -> I64
 validCount2 = \lines ->
     List.walk lines countValid2 0
 
 
-countValid1 : Line, Int -> Int
+countValid1 : Line, I64 -> I64
 countValid1 = \line, count ->
     if isValid1 line then
         count + 1
@@ -41,7 +41,7 @@ countValid1 = \line, count ->
         count
 
 
-countValid2 : Line, Int -> Int
+countValid2 : Line, I64 -> I64
 countValid2 = \line, count ->
     if isValid2 line then
         count + 1
@@ -59,7 +59,7 @@ isValid1 = \line ->
     (min <= given) && (given <= max)
 
 
-countMember : List Int, Int -> Int
+countMember : List I64, I64 -> I64
 countMember = \list, element ->
     mapper = \e -> if e == element then 1 else 0
     list |> List.map mapper |> List.sum
@@ -77,14 +77,14 @@ isValid2 = \line ->
     (val1 == element) != (val2 == element)
 
 
-getValidationParameter : Line, Int -> Int
+getValidationParameter : Line, I64 -> I64
 getValidationParameter = \line, position ->
     when List.get line position is
         Ok n -> -n
         _ -> 0
 
 
-getPasswordChar : Line, Int -> Int
+getPasswordChar : Line, I64 -> I64
 getPasswordChar = \line, position ->
     when List.get line (position + 2) is
         Ok n -> n

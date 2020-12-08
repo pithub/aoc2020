@@ -1,7 +1,7 @@
 interface Day01 exposes [ output ] imports [ ListExtra, ListZip, TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \puzzleInput ->
     sortedTestInput   = testInput   |> TestUtil.ints |> ListExtra.quicksort
     sortedPuzzleInput = puzzleInput |> TestUtil.ints |> ListExtra.quicksort
@@ -13,7 +13,7 @@ output = \puzzleInput ->
     ]
 
 
-solution2 : List Int -> Int
+solution2 : List I64 -> I64
 solution2 = \list ->
     lo = ListZip.new list 0
     hi = ListZip.last lo list
@@ -21,7 +21,7 @@ solution2 = \list ->
     search2Values list lo hi
 
 
-search2Values : List Int, ListZip.Zip, ListZip.Zip -> Int
+search2Values : List I64, ListZip.Zip, ListZip.Zip -> I64
 search2Values = \list, lo, hi ->
     sum = lo.val + hi.val
 
@@ -37,7 +37,7 @@ search2Values = \list, lo, hi ->
         search2Values list lo nextHi
 
 
-solution3 : List Int -> Int
+solution3 : List I64 -> I64
 solution3 = \list ->
     lo = ListZip.new list 0
     mid = ListZip.forward lo list
@@ -46,7 +46,7 @@ solution3 = \list ->
     search3Values list lo mid hi
 
 
-search3Values : List Int, ListZip.Zip, ListZip.Zip, ListZip.Zip -> Int
+search3Values : List I64, ListZip.Zip, ListZip.Zip, ListZip.Zip -> I64
 search3Values = \list, lo, mid, hi ->
     sum = lo.val + mid.val + hi.val
 
@@ -74,7 +74,7 @@ search3Values = \list, lo, mid, hi ->
             search3Values list nextLo nextMid nextHi
 
 
-testInput : List Int
+testInput : List I64
 testInput =
     [ 49, 55, 50, 49, 10
     , 57, 55, 57, 10

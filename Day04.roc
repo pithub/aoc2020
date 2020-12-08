@@ -1,7 +1,7 @@
 interface Day04 exposes [ output ] imports [ TestUtil ]
 
 
-output : List (List Int)
+output : List (List I64)
 output =
     [ TestUtil.verify 4 1 1 (countValidPassports1 testInput       ) 2
     , TestUtil.show   4 1   (countValidPassports1 puzzleInput     )
@@ -11,12 +11,12 @@ output =
     ]
 
 
-Field : [ Byr Int, Iyr Int, Eyr Int, Hgt Int, Hcl Int, Ecl Int, Pid Int, Cid ]
+Field : [ Byr I64, Iyr I64, Eyr I64, Hgt I64, Hcl I64, Ecl I64, Pid I64, Cid ]
 
 Passport : List Field
 
 
-countValidPassports1 : List Passport -> Int
+countValidPassports1 : List Passport -> I64
 countValidPassports1 = \passports ->
     List.keepIf passports validPassport1 |> List.len
 
@@ -38,7 +38,7 @@ cidField = \field ->
         _ -> False
 
 
-countValidPassports2 : List Passport -> Int
+countValidPassports2 : List Passport -> I64
 countValidPassports2 = \passports ->
     List.keepIf passports validPassport2 |> List.len
 

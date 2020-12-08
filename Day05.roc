@@ -1,7 +1,7 @@
 interface Day05 exposes [ output ] imports [ ListExtra, TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \input ->
     puzzleInput = toSeats input
 
@@ -14,32 +14,32 @@ output = \input ->
     ]
 
 
-Seat : [ Seat Int Int ]
+Seat : [ Seat I64 I64 ]
 
 
-highestBoardingPassId : List Seat -> Int
+highestBoardingPassId : List Seat -> I64
 highestBoardingPassId = \seats ->
     List.map seats boardingPassId |> List.walk maxId 0
 
 
-boardingPassId : Seat -> Int
+boardingPassId : Seat -> I64
 boardingPassId = \seat ->
     when seat is
         Seat row column -> row * 8 + column
 
 
-maxId : Int, Int -> Int
+maxId : I64, I64 -> I64
 maxId = \id1, id2 ->
     if id1 > id2 then id1 else id2
 
 
-freeBoardingPassId : List Seat -> Int
+freeBoardingPassId : List Seat -> I64
 freeBoardingPassId = \seats ->
     sortedIds = List.map seats boardingPassId |> ListExtra.quicksort
     missingIdInRow sortedIds 0
 
 
-missingIdInRow : List Int, Int -> Int
+missingIdInRow : List I64, I64 -> I64
 missingIdInRow = \ids, idx ->
     id1 = getListElement ids idx
     id2 = getListElement ids (idx + 1)
@@ -65,7 +65,7 @@ missingIdInRow = \ids, idx ->
         missingIdInRow ids (idx + 8)
 
 
-getListElement : List Int, Int -> Int
+getListElement : List I64, I64 -> I64
 getListElement = \list, idx ->
     when List.get list idx is
         Ok n -> n
@@ -85,12 +85,12 @@ testInput14 : List Seat
 testInput14 = toSeats [ 66, 66, 70, 70, 66, 66, 70, 82, 76, 76, 10 ]
 
 
-toSeats : List Int -> List Seat
+toSeats : List I64 -> List Seat
 toSeats = \input ->
     (List.walk input seatWalker initialBuilder).seats
 
 
-SeatBuilder : { row : Int, col : Int, seats : List Seat }
+SeatBuilder : { row : I64, col : I64, seats : List Seat }
 
 
 initialBuilder : SeatBuilder
@@ -98,7 +98,7 @@ initialBuilder =
     { row: 0, col: 0, seats: [] }
 
 
-seatWalker : Int, SeatBuilder -> SeatBuilder
+seatWalker : I64, SeatBuilder -> SeatBuilder
 seatWalker = \char, builder ->
     when char is
         70 -> { builder & row: builder.row * 2 }

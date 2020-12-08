@@ -1,7 +1,7 @@
 interface Day08 exposes [ output ] imports [ TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \puzzleInput ->
     testCode   = parseInput testInput
     puzzleCode = parseInput puzzleInput
@@ -16,20 +16,20 @@ output = \puzzleInput ->
 # code instructions
 
 
-Inst : [ Nop Int, Acc Int, Jmp Int ]
+Inst : [ Nop I64, Acc I64, Jmp I64 ]
 
 
 # find loop in code
 
 
-accBeforeLoop : List Inst -> Int
+accBeforeLoop : List Inst -> I64
 accBeforeLoop = \code ->
     initial = initialRunState code
     final = runUntilLoopOrEnd initial
     final.acc
 
 
-RunState : { length : Int, code: List Inst, ip: Int, acc: Int, visited: List Int }
+RunState : { length : I64, code: List Inst, ip: I64, acc: I64, visited: List I64 }
 
 
 initialRunState : List Inst -> RunState
@@ -74,12 +74,12 @@ step = \state ->
 # correct code and run until end
 
 
-accAtEnd : List Inst -> Int
+accAtEnd : List Inst -> I64
 accAtEnd = \code ->
     accAtEndHelper code code 0
 
 
-accAtEndHelper : List Inst, List Inst, Int -> Int
+accAtEndHelper : List Inst, List Inst, I64 -> I64
 accAtEndHelper = \originalCode, codeToExecute, chg ->
     initial = initialRunState codeToExecute
     final = runUntilLoopOrEnd initial
@@ -103,11 +103,11 @@ accAtEndHelper = \originalCode, codeToExecute, chg ->
 # parse input to code instructions
 
 
-parseInput : List Int -> List Inst
+parseInput : List I64 -> List Inst
 parseInput = \input ->
     (List.walk input parseWalker initialParseAcc).output
 
-ParseAcc : { inst : Int, sign : Int, op : Int, output : List Inst }
+ParseAcc : { inst : I64, sign : I64, op : I64, output : List Inst }
 
 
 initialParseAcc : ParseAcc
@@ -115,7 +115,7 @@ initialParseAcc =
     { inst: 0, sign: 0, op: 0, output: [] }
 
 
-parseWalker : Int, ParseAcc -> ParseAcc
+parseWalker : I64, ParseAcc -> ParseAcc
 parseWalker = \val, acc ->
     if val == 10 then
         instOp = acc.sign * acc.op
@@ -140,7 +140,7 @@ parseWalker = \val, acc ->
 #  test data
 
 
-testInput : List Int
+testInput : List I64
 testInput =
     [ 110, 43, 48, 10
     , 97, 43, 49, 10

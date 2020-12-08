@@ -1,7 +1,7 @@
 interface Day03 exposes [ output ] imports [ Map2, TestUtil ]
 
 
-output : List Int -> List (List Int)
+output : List I64 -> List (List I64)
 output = \puzzleInput ->
     [ TestUtil.verify 3 1 1 (combinedTreeCount1 testInput  ) 7
     , TestUtil.show   3 1   (combinedTreeCount1 puzzleInput)
@@ -10,13 +10,13 @@ output = \puzzleInput ->
     ]
 
 
-combinedTreeCount1 : List Int -> Int
+combinedTreeCount1 : List I64 -> I64
 combinedTreeCount1 = \cells ->
     inf = Map2.info cells 0
     treeCount cells inf 3 1
 
 
-combinedTreeCount2 : List Int -> Int
+combinedTreeCount2 : List I64 -> I64
 combinedTreeCount2 = \cells ->
     inf = Map2.info cells 0
     (treeCount cells inf 1 1) *
@@ -26,12 +26,12 @@ combinedTreeCount2 = \cells ->
     (treeCount cells inf 1 2)
 
 
-treeCount : List Int, Map2.Inf2, Int, Int -> Int
+treeCount : List I64, Map2.Inf2, I64, I64 -> I64
 treeCount = \cells, inf, right, down ->
     treeCountHelper cells inf right down 0 0 0
 
 
-treeCountHelper : List Int, Map2.Inf2, Int, Int, Int, Int, Int -> Int
+treeCountHelper : List I64, Map2.Inf2, I64, I64, I64, I64, I64 -> I64
 treeCountHelper = \cells, inf, right, down, x, y, count ->
     if y < inf.rows then
         cell = Map2.getI cells inf y x
@@ -57,7 +57,7 @@ treeCountHelper = \cells, inf, right, down, x, y, count ->
         count
 
 
-testInput : List Int
+testInput : List I64
 testInput =
     [ 46, 46, 35, 35, 46, 46, 46, 46, 46, 46, 46, 10
     , 35, 46, 46, 46, 35, 46, 46, 46, 35, 46, 46, 10

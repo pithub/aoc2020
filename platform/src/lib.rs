@@ -33,16 +33,16 @@ pub fn roc_fx_readFile(name: RocStr) -> RocList<i64> {
     RocList::from_slice(&ints)
 }
 
+fn byteToInt(byte: &u8) -> i64 {
+    i64::from(*byte)
+}
+
 #[no_mangle]
 pub fn roc_fx_writeData(data: RocList<RocList<i64>>) -> () {
     for sub_list in data.as_slice() {
         println!("|   {:?}", &sub_list.as_slice());
     }
     ()
-}
-
-fn byteToInt(byte: &u8) -> i64 {
-    i64::from(*byte)
 }
 
 unsafe fn call_the_closure(function_pointer: *const u8, closure_data_ptr: *const u8) -> i64 {
@@ -58,7 +58,7 @@ unsafe fn call_the_closure(function_pointer: *const u8, closure_data_ptr: *const
             buffer as *mut u8,
         );
 
-        let output = &*(buffer as *mut RocCallResult<i64>);
+        let output = &*(buffer as *mut RocCallResult<()>);
 
         match output.into() {
             Ok(_) => 0,
