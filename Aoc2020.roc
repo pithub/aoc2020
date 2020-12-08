@@ -1,10 +1,10 @@
-app "aoc2020" imports [ Effect, Day07 ] provides [ aocMain ] to "./platform"
+app "aoc2020" imports [ Effect, Day08 ] provides [ aocMain ] to "./platform"
 
 
 aocMain : Effect.Effect {} as Fx
 aocMain =
-    Effect.readFile "Day07.txt"
-        |> Effect.after (\input -> Day07.output input
+    Effect.readFile "Day08.txt"
+        |> Effect.after (\input -> Day08.output input
             |> Effect.writeData )
 
 
@@ -17,3 +17,4 @@ aocMain =
 #   05  963, 592           seats in airplane
 #   06  6387, 3039         questionnaire answers
 #   07  316, 11310         nested bags
+#   08  1475, 1270         game console code
