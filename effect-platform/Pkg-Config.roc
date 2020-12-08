@@ -1,4 +1,4 @@
-platform pithub/aoc2020
+platform pithub/aoc2020e
     requires { aocMain : Effect {} }
     exposes [ Task ]
     packages {}
