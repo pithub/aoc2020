@@ -21,16 +21,16 @@ output = \puzzleInput ->
 
 firstInvalid : I64, List I64 -> I64
 firstInvalid = \len, list ->
-    start = ListZip.new list 0
-    next = ListZip.move start list len
+    start = ListZip.newAtFirst list 0
+    next = ListZip.moveTo start list len
     firstInvalidHelper len list start next
 
 
 firstInvalidHelper : I64, List I64, ListZip.Zip, ListZip.Zip -> I64
 firstInvalidHelper = \len, list, start, next ->
     sorted = sortedSubList list start len
-    subStart = ListZip.new sorted 0
-    subEnd = ListZip.move subStart sorted (len - 1)
+    subStart = ListZip.newAtFirst sorted 0
+    subEnd = ListZip.last subStart sorted
 
     if pairExists sorted next.val subStart subEnd then
         newStart = ListZip.forward start list
@@ -66,7 +66,7 @@ sortedSubList = \list, start, len ->
 
 weakness : I64, List I64 -> I64
 weakness = \inv, list ->
-    start = ListZip.new list 0
+    start = ListZip.newAtFirst list 0
     weaknessHelper1 inv list start
 
 
@@ -94,7 +94,7 @@ weaknessHelper2 = \inv, list, start, end, sum ->
     else
         len = end.idx - start.idx + 1
         sorted = sortedSubList list start len
-        first = ListZip.new sorted 0
+        first = ListZip.newAtFirst sorted 0
         last = ListZip.last first sorted
         first.val + last.val
 

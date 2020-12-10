@@ -15,7 +15,7 @@ output = \puzzleInput ->
 
 solution2 : List I64 -> I64
 solution2 = \list ->
-    lo = ListZip.new list 0
+    lo = ListZip.newAtFirst list 0
     hi = ListZip.last lo list
 
     search2Values list lo hi
@@ -39,7 +39,7 @@ search2Values = \list, lo, hi ->
 
 solution3 : List I64 -> I64
 solution3 = \list ->
-    lo = ListZip.new list 0
+    lo = ListZip.newAtFirst list 0
     mid = ListZip.forward lo list
     hi = ListZip.last lo list
 
@@ -59,8 +59,8 @@ search3Values = \list, lo, mid, hi ->
             search3Values list lo nextMid hi
         else
             nextLo = ListZip.forward lo list
-            nextMid = ListZip.forward lo list
-            nextHi = ListZip.last lo list
+            nextMid = ListZip.forward nextLo list
+            nextHi = ListZip.last nextLo list
             search3Values list nextLo nextMid nextHi
 
     else
@@ -69,8 +69,8 @@ search3Values = \list, lo, mid, hi ->
             search3Values list lo mid nextHi
         else
             nextLo = ListZip.forward lo list
-            nextMid = ListZip.forward lo list
-            nextHi = ListZip.last lo list
+            nextMid = ListZip.forward nextLo list
+            nextHi = ListZip.last nextLo list
             search3Values list nextLo nextMid nextHi
 
 

@@ -1,13 +1,30 @@
-interface ListZip exposes [ Zip, new, first, last, forward, backward, move, collect ] imports []
+interface ListZip exposes
+    [ Zip
+    , newAtFirst, newAtLast, newAt
+    , first, isFirst, last, isLast
+    , forward, backward, moveTo
+    , collect
+    ]
+    imports []
 
 
 Zip : { len: I64, idx: I64, val: I64, default: I64 }
 
 
-new : List I64, I64 -> Zip
-new = \list, default ->
+newAtFirst : List I64, I64 -> Zip
+newAtFirst = \list, default ->
+    newAt list 0 default
+
+
+newAtLast : List I64, I64 -> Zip
+newAtLast = \list, default ->
+    lastIdx = List.len list - 1
+    newAt list lastIdx default
+
+
+newAt : List I64, I64, I64 -> Zip
+newAt = \list, idx, default ->
     len = List.len list
-    idx = 0
     val = read list idx default
 
     { len, idx, val, default }
@@ -15,26 +32,36 @@ new = \list, default ->
 
 first : Zip, List I64 -> Zip
 first = \zip, list ->
-    move zip list 0
+    moveTo zip list 0
+
+
+isFirst : Zip -> Bool
+isFirst = \zip ->
+    zip.idx <= 0
 
 
 last : Zip, List I64 -> Zip
 last = \zip, list ->
-    move zip list (zip.len - 1)
+    moveTo zip list (zip.len - 1)
+
+
+isLast : Zip -> Bool
+isLast = \zip ->
+    zip.idx >= (zip.len - 1)
 
 
 forward : Zip, List I64 -> Zip
 forward = \zip, list ->
-    move zip list (zip.idx + 1)
+    moveTo zip list (zip.idx + 1)
 
 
 backward : Zip, List I64 -> Zip
 backward = \zip, list ->
-    move zip list (zip.idx - 1)
+    moveTo zip list (zip.idx - 1)
 
 
-move : Zip, List I64, I64 -> Zip
-move = \zip, list, idx ->
+moveTo : Zip, List I64, I64 -> Zip
+moveTo = \zip, list, idx ->
     if idx == zip.idx then
         zip
     else
