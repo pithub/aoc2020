@@ -1,13 +1,13 @@
 app "aoc2020e"
     packages { base: "effect-platform" }
-    imports [ Day10, base.Task ]
+    imports [ Day11, base.Task ]
     provides [ aocMain ] to base
 
 
 aocMain : Task.Task {} as Fx
 aocMain =
-    Task.readFile "Day10.txt"
-        |> Task.after (\input -> Day10.output input
+    Task.readFile "Day11.txt"
+        |> Task.after (\input -> Day11.output input
             |> Task.writeData)
 
 
@@ -23,3 +23,4 @@ aocMain =
 #   08  1475, 1270            ero  game console code
 #   09  144381670, 20532569   ero  xmas encryption
 #   10  2738, 74049191673856  ero  jolt adapter sequences
+#   11  2359, 2131            er-  seats after airplane boarding

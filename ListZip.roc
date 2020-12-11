@@ -1,7 +1,7 @@
 interface ListZip exposes
     [ Zip
     , newAtFirst, newAtLast, newAt
-    , first, isFirst, last, isLast
+    , first, beforeFirst, last, afterLast
     , forward, backward, moveTo
     , collect
     ]
@@ -35,9 +35,9 @@ first = \zip, list ->
     moveTo zip list 0
 
 
-isFirst : Zip -> Bool
-isFirst = \zip ->
-    zip.idx <= 0
+beforeFirst : Zip -> Bool
+beforeFirst = \zip ->
+    zip.idx < 0
 
 
 last : Zip, List I64 -> Zip
@@ -45,9 +45,9 @@ last = \zip, list ->
     moveTo zip list (zip.len - 1)
 
 
-isLast : Zip -> Bool
-isLast = \zip ->
-    zip.idx >= (zip.len - 1)
+afterLast : Zip -> Bool
+afterLast = \zip ->
+    zip.idx >= zip.len
 
 
 forward : Zip, List I64 -> Zip

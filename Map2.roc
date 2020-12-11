@@ -1,4 +1,4 @@
-interface Map2 exposes [ Inf2, info, getI ] imports []
+interface Map2 exposes [ Inf2, info, getI, setI ] imports []
 
 
 Inf2 : { rows : I64, cols : I64, default : I64 }
@@ -28,7 +28,17 @@ getI = \cells, inf, row, col ->
             when List.get cells idx is
                 Ok val -> val
                 _ -> inf.default
-        _ -> inf.default
+        _ ->
+            inf.default
+
+
+setI : List I64, Inf2, I64, I64, I64 -> List I64
+setI = \cells, inf, row, col, val ->
+    when index inf row col is
+        Ok idx ->
+            List.set cells idx val
+        _ ->
+            cells
 
 
 index : Inf2, I64, I64 -> Result I64 {}
