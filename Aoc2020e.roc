@@ -1,20 +1,20 @@
 app "aoc2020e"
     packages { base: "effect-platform" }
-    imports [ Day12, base.Task ]
+    imports [ Day02, base.Task ]
     provides [ aocMain ] to base
 
 
 aocMain : Task.Task {} as Fx
 aocMain =
-    Task.readFile "Day12.txt"
-        |> Task.after (\input -> Day12.output input
+    Task.readFile "Day02.txt"
+        |> Task.after (\input -> Day02.output input
             |> Task.writeData)
 
 
 #  Day  Answers               Run  Topic
 #  ---  --------------------  ---  ---------------------------------------------
 #   01  1007331, 48914340     ero  pairs and triples
-#   02  655, 673              ---  valid passwords
+#   02  655, 673              ero  valid passwords
 #   03  159, 6419669520       er-  trees on path in a map
 #   04  230, 156              nro  valid passports
 #   05  963, 592              ero  seats in airplane
