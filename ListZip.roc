@@ -2,7 +2,7 @@ interface ListZip exposes
     [ Zip
     , newAtFirst, newAtLast, newAt
     , first, beforeFirst, last, afterLast
-    , forward, backward, moveTo
+    , forward, backward, move, moveTo
     , collect
     ]
     imports []
@@ -52,12 +52,18 @@ afterLast = \zip ->
 
 forward : Zip, List I64 -> Zip
 forward = \zip, list ->
-    moveTo zip list (zip.idx + 1)
+    move zip list 1
 
 
 backward : Zip, List I64 -> Zip
 backward = \zip, list ->
-    moveTo zip list (zip.idx - 1)
+    move zip list -1
+
+
+move : Zip, List I64, I64 -> Zip
+move = \zip, list, len ->
+    idx = zip.idx + len
+    moveTo zip list idx
 
 
 moveTo : Zip, List I64, I64 -> Zip
