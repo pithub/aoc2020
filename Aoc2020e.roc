@@ -1,13 +1,13 @@
 app "aoc2020e"
     packages { base: "effect-platform" }
-    imports [ Day02, base.Task ]
+    imports [ Day16, base.Task ]
     provides [ aocMain ] to base
 
 
 aocMain : Task.Task {} as Fx
 aocMain =
-    Task.readFile "Day02.txt"
-        |> Task.after (\input -> Day02.output input
+    Task.readFile "Day16.txt"
+        |> Task.after (\input -> Day16.output input
             |> Task.writeData)
 
 

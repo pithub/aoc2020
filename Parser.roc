@@ -1,9 +1,11 @@
 interface Parser
     exposes
-        [ Parser, Res, State, initial, repeated
+        [ Parser, Res, State
+        , initial, repeated, validate
         , singleVal, fixedVals, remainingVals
         , fixedStr, remainingStr
         , fixedIgnore, remainingIgnore
+        , singleWord
         , uint, int
         ]
     imports [ ListZip ]
@@ -44,6 +46,19 @@ repeatedHelper = \input, state, parser, val ->
         res = parser input state
         newVal = List.join [ val, [ res.val ] ]
         repeatedHelper input res.state parser newVal
+
+
+validate : Parser a, List I64 -> Result a {}
+validate = \parser, input ->
+    init = initial input
+    res = parser input init
+    if ListZip.afterLast res.state then
+        Ok res.val
+    else
+        Err {}
+
+
+#  Collect unmodified values
 
 
 singleVal : Parser I64
@@ -156,6 +171,36 @@ remainingIgnoreHelper = \input, state ->
             { val: 0, state: newState }
         else
             remainingIgnoreHelper input newState
+
+
+#  Space-delimited Words
+
+
+singleWord : Parser (List I64)
+singleWord =
+    (\input, state ->
+        singleWordHelper input state [])
+
+
+singleWordHelper : List I64, State, List I64 -> Res (List I64)
+singleWordHelper = \input, state, val ->
+    if ListZip.afterLast state then
+        { val, state }
+    else
+        newState = ListZip.forward state input
+        if isWhitespace state.val then
+            { val, state: newState }
+        else
+            newVal = List.append val state.val
+            singleWordHelper input newState newVal
+
+
+isWhitespace : I64 -> Bool
+isWhitespace = \val ->
+    when val is
+        10 -> True
+        32 -> True
+        _  -> False
 
 
 #  Integer Parsers
