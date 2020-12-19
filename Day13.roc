@@ -65,62 +65,99 @@ waitTime = \time, bus ->
 #  second part
 
 
-#  17.a = 13.b - 2 = 19.c - 3
-#  --
-#  17 = 13.1 + 4  |  4 = 17.1 - 13.1                 |  17.1 = 13.1 + 4
-#  13 = 4.3 + 1   |  1 = 13.1 - 4.3 = 17.-3 - 13.-4  |  17.3 = 13.4 - 1
-#
-#  -2 = 17.6 - 13.8                                  |  17.6 = 13.8 - 2
-#
-#  17.(6 + 13.a) = 13.(8 + 17.a) - 2
-#  --
-#  17.6 + 17.13.a = 19.c - 3
-#  221.a = 19.c - 105
-#
-#  221 = 19.11 + 12  |  12 = 221.1 - 19.11                 |  221.1 = 19.11 + 12
-#  19 = 12.1 + 7     |  -7 = 12.1 - 19.1 = 221.1 - 19.12   |  221.1 = 19.12 - 7
-#  12 = 7.1 + 5      |  5 = 12.1 - 7.1 = 221.2 - 19.23     |  221.2 = 19.23 + 5
-#                    |  -105 = 221.-42 - 19.-483           |
-#                    |       = 221.15 - 19.180             |  221.15 = 19.180 - 105
-#
-#  17.(6 + 13.15) = 13.(8 + 17.15) - 2 = 19.180 - 3 = 3417
-#  --
-#  0, 17, 13, -2 -> 102, 221
-#  102, 221, 19, -3 -> 3417, 4199
-
-
-#  17.a = 13.b - 2 = 19.c - 3
-#  17.a + 3 = 13.b + 1 = 19.c + 0
-#  --
-#  n mod 17 = 3  |   0
-#  n mod 13 = 1  |  11
-#  n mod 19 = 0  |  16
-#  --
-#       1   3
-#  17  13   4   1
-#   1   0   1  -3
-#   0   1  -1   4
-#  --
-#  17.-3 + 13.4 = 1
-#  1.17.-3 + 3.13.4 = -51 + 156 = 105  |  11.17.-3 = -561 == 102
-#  n mod 221 = 105
-#  --
-#       11    1   1    1   2
-#  221  19   12   7    5   2    1
-#    1   0    1  -1    2  -3    8
-#    0   1  -11  12  -23  35  -93
-#  --
-#  221.8 + 19.-93 = 1
-#  0.221.8 + 105.19.-93 = -185535 == 3420 (4199)  |  16.221.8 + 102.19.-93 = -151946 == 3417
-#            105.-93 == 180 (221)
-#  --
-#   17,   0, 13, 11 ->  221,  102
-#  221, 102, 19, 16 -> 4199, 3417
-
-
 secondResult : List I64 -> I64
 secondResult = \data ->
-    2 * List.len data
+    secondResultHelper data 0 1 1
+
+
+secondResultHelper : List I64, I64, I64, I64 -> I64
+secondResultHelper = \data, rem, prd, idx ->
+    when List.get data idx is
+        Ok bus ->
+            newIdx = idx + 1
+            if bus > 0 then
+                busRem = absM (bus - idx + 1) bus
+                newRem = crt rem prd busRem bus
+                newPrd = prd * bus
+                secondResultHelper data newRem newPrd newIdx
+            else
+                secondResultHelper data rem prd newIdx
+        _ ->
+            rem
+
+
+#  maths
+
+
+Eea : { bez1 : I64, bez2 : I64, gcd : I64, quot1 : I64, quot2 : I64 }
+
+
+eea : I64, I64 -> Eea
+eea = \a, b ->
+    eeaHelper { oldR: a, r: b, oldS: 1, s: 0, oldT: 0, t: 1 }
+
+
+EeaAcc : { oldR : I64, r : I64, oldS : I64, s : I64, oldT : I64, t : I64 }
+
+
+eeaHelper : EeaAcc -> Eea
+eeaHelper = \acc ->
+    when acc.oldR // acc.r is
+        Ok quotient ->
+            eeaHelper
+                { oldR: acc.r, r: acc.oldR - quotient * acc.r
+                , oldS: acc.s, s: acc.oldS - quotient * acc.s
+                , oldT: acc.t, t: acc.oldT - quotient * acc.t
+                }
+        _ ->
+            { bez1: acc.oldS, bez2: acc.oldT, gcd: acc.oldR, quot1: acc.t, quot2: acc.s }
+
+
+crt : I64, I64, I64, I64 -> I64
+crt = \a1, n1, a2, n2 ->
+    e = eea n1 n2
+
+    a1b2 = mulM a1 e.bez2 n1
+    a2b1 = mulM a2 e.bez1 n2
+    n1n2 = n1 * n2
+    
+    c = mulM a1b2 n2 n1n2 + mulM a2b1 n1 n1n2
+    absM c n1n2
+
+
+absM : I64, I64 -> I64
+absM = \a, m ->
+    when a % m is
+        Ok n -> if n < 0 then n + m else n
+        _ -> 0
+
+
+mulM : I64, I64, I64 -> I64
+mulM = \a, b, m ->
+    mulMHelper (absM a m) (absM b m) m 0
+
+
+mulMHelper : I64, I64, I64, I64 -> I64
+mulMHelper = \a, b, m, q ->
+    if b > 0 then
+        newA =
+            when (2 * a) % m is
+                Ok n -> n
+                _ -> 0
+        newB =
+            when b // 2 is
+                Ok n -> n
+                _ -> 0
+        newQ =
+            if 2 * newB < b then
+                when (q + a) % m is
+                    Ok n -> n
+                    _ -> 0
+            else
+                q
+        mulMHelper newA newB m newQ
+    else
+        q
 
 
 #  test data
