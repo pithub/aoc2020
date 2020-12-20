@@ -4,7 +4,7 @@ app "aoc2020e"
     provides [ aocMain ] to base
 
 
-aocMain : Task.Task {} as Fx
+aocMain : Task.Task {}
 aocMain =
     Task.readFile "Day25.txt"
         |> Task.after (\input -> Day25.output input

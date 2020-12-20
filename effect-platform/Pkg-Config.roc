@@ -1,8 +1,8 @@
 platform pithub/aoc2020e
     requires { aocMain : Effect {} }
-    exposes [ Task ]
+    exposes []
     packages {}
-    imports []
+    imports [ Task ]
     provides [ mainForHost ]
     effects Effect
         {
@@ -10,5 +10,5 @@ platform pithub/aoc2020e
             writeData : List (List I64) -> Effect {}
         }
 
-mainForHost : Effect {} as Fx
+mainForHost : Task.Task {} as Fx
 mainForHost = aocMain
