@@ -10,7 +10,7 @@ output = \puzzleInput ->
     [ TestUtil.verify 14 1 1 (firstResult testData1 ) 165
     , TestUtil.show   14 1   (firstResult puzzleData)
     , TestUtil.verify 14 2 1 (secondResult testData2 ) 208
-    #, TestUtil.show   14 2   (secondResult puzzleData)
+    , TestUtil.show   14 2   (secondResult puzzleData)
     ]
 
 
@@ -88,7 +88,7 @@ memorySum = \memory, result, idx ->
 
 secondResult : List Instruction -> I64
 secondResult = \data ->
-    initialSet = ListSet.empty
+    initialSet = ListSet.emptyWithConfig 1000
     lastIdx = List.len data
     adrs = []
     adr = ListZip.newAtFirst adrs 0

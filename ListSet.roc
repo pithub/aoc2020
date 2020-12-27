@@ -1,16 +1,36 @@
 interface ListSet
-    exposes [ empty, isEmpty, size, singleton, member, insert, inserted, toList ]
+    exposes [ empty, emptyWithConfig, isEmpty, size, singleton, member, insert, inserted, toList ]
     imports []
 
 
 empty : List I64
 empty =
-    [ 0, 0 ]
+    emptyWithConfig 1
+
+
+emptyWithConfig : I64 -> List I64
+emptyWithConfig = \nodes ->
+    [ 0, 0, nodes, 4 ]
+
+
+allocNodes : List I64 -> I64
+allocNodes = \tree ->
+    read tree 2
+
+
+lastIndex : List I64 -> I64
+lastIndex = \tree ->
+    read tree 3
+
+
+setLastIndex : List I64, I64 -> List I64
+setLastIndex = \tree, val ->
+    List.set tree 3 val
 
 
 size : List I64 -> I64
 size = \tree ->
-    when (List.len tree - 2) // 4 is
+    when (lastIndex tree - 4) // 4 is
         Ok len -> len
         _ -> 0
 
@@ -22,7 +42,7 @@ isEmpty = \tree ->
 
 singleton : I64 -> List I64
 singleton = \val ->
-    [ 2, 0, val, 2, 0, 0 ]
+    [ 4, 0, 1, 8, val, 2, 0, 0 ]
 
 
 member : List I64, I64 -> Bool
@@ -125,12 +145,21 @@ balance = \tree, ptrOut, node ->
 
 
 addNode = \tree, ptrOut, val, col, lft, rgt ->
-    node = List.len tree
-    tree
-        |> List.append val
-        |> List.append col
-        |> List.append lft
-        |> List.append rgt
+    node = lastIndex tree
+
+    newTree =
+        if node < List.len tree then
+            tree
+        else
+            buffer = List.repeat (4 * allocNodes tree) 0
+            List.concat tree buffer
+
+    newTree
+        |> List.set (node + 0) val
+        |> List.set (node + 1) col
+        |> List.set (node + 2) lft
+        |> List.set (node + 3) rgt
+        |> setLastIndex (node + 4)
         |> setInserted 1
         |> setPtrNode ptrOut node
 
