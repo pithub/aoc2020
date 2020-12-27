@@ -1,33 +1,33 @@
-interface Day15 exposes [ output ] imports [ ListTree, TestUtil ]
+interface Day15 exposes [ output ] imports [ TestUtil ]
 
 
 output : List I64 -> List (List I64)
 output = \puzzleInput ->
-    testData1   = parseData testInput1
-    testData2   = parseData testInput2
-    testData3   = parseData testInput3
-    testData4   = parseData testInput4
-    testData5   = parseData testInput5
-    testData6   = parseData testInput6
-    testData7   = parseData testInput7
+    testData1  = parseData testInput1
+    testData2  = parseData testInput2
+    testData3  = parseData testInput3
+    testData4  = parseData testInput4
+    testData5  = parseData testInput5
+    testData6  = parseData testInput6
+    testData7  = parseData testInput7
     puzzleData = parseData puzzleInput
 
     [ TestUtil.verify 15 1 1 (firstResult testData1 ) 436
-    #, TestUtil.verify 15 1 2 (firstResult testData2 ) 1
-    #, TestUtil.verify 15 1 3 (firstResult testData3 ) 10
-    #, TestUtil.verify 15 1 4 (firstResult testData4 ) 27
-    #, TestUtil.verify 15 1 5 (firstResult testData5 ) 78
-    #, TestUtil.verify 15 1 6 (firstResult testData6 ) 438
-    #, TestUtil.verify 15 1 7 (firstResult testData7 ) 1836
-    #, TestUtil.show   15 1   (firstResult puzzleData)
-    #, TestUtil.verify 15 2 1 (secondResult testData1  ) 175594
-    #, TestUtil.verify 15 2 2 (secondResult testData2  ) 2578
-    #, TestUtil.verify 15 2 3 (secondResult testData3  ) 3544142
-    #, TestUtil.verify 15 2 4 (secondResult testData4  ) 261214
-    #, TestUtil.verify 15 2 5 (secondResult testData5  ) 6895259
-    #, TestUtil.verify 15 2 6 (secondResult testData6  ) 18
-    #, TestUtil.verify 15 2 7 (secondResult testData7  ) 362
-    #, TestUtil.show   15 2   (secondResult puzzleData)
+    , TestUtil.verify 15 1 2 (firstResult testData2 ) 1
+    , TestUtil.verify 15 1 3 (firstResult testData3 ) 10
+    , TestUtil.verify 15 1 4 (firstResult testData4 ) 27
+    , TestUtil.verify 15 1 5 (firstResult testData5 ) 78
+    , TestUtil.verify 15 1 6 (firstResult testData6 ) 438
+    , TestUtil.verify 15 1 7 (firstResult testData7 ) 1836
+    , TestUtil.show   15 1   (firstResult puzzleData)
+    , TestUtil.verify 15 2 1 (secondResult testData1 ) 175594
+    , TestUtil.verify 15 2 2 (secondResult testData2 ) 2578
+    , TestUtil.verify 15 2 3 (secondResult testData3 ) 3544142
+    , TestUtil.verify 15 2 4 (secondResult testData4 ) 261214
+    , TestUtil.verify 15 2 5 (secondResult testData5 ) 6895259
+    , TestUtil.verify 15 2 6 (secondResult testData6 ) 18
+    , TestUtil.verify 15 2 7 (secondResult testData7 ) 362
+    , TestUtil.show   15 2   (secondResult puzzleData)
     ]
 
 
@@ -36,16 +36,16 @@ output = \puzzleInput ->
 
 firstResult : List I64 -> I64
 firstResult = \data ->
-    last = getStart data 0 []
+    last = getStart data 0 (List.repeat 2020 -1)
     turn = List.len data
     idx = List.len data - 1
     num = read data idx
-    firstResultHelper last turn num 0
+    getResultHelper last 2020 turn num 0
 
 
-firstResultHelper : List I64, I64, I64, I64 -> I64
-firstResultHelper = \last, turn, num, lastTurn ->
-    if turn < 300000 then
+getResultHelper : List I64, I64, I64, I64, I64 -> I64
+getResultHelper = \last, turns, turn, num, lastTurn ->
+    if turn < turns then
         newTurn = turn + 1
         newNum =
             if lastTurn > 0 then
@@ -53,8 +53,8 @@ firstResultHelper = \last, turn, num, lastTurn ->
             else
                 0
         newLastTurn = read last newNum
-        newLast = addLast last newNum newTurn
-        firstResultHelper newLast newTurn newNum newLastTurn
+        newLast = List.set last newNum newTurn
+        getResultHelper newLast turns newTurn newNum newLastTurn
     else
         num
 
@@ -67,22 +67,8 @@ getStart = \nums, idx, result ->
     else
         newIdx = idx + 1
         turn = idx + 1
-        newResult = addLast result num turn
+        newResult = List.set result num turn
         getStart nums newIdx newResult
-
-
-addLast : List I64, I64, I64 -> List I64
-addLast = \last, num, turn ->
-    last |> ensureSize num |> List.set num turn
-
-
-ensureSize : List I64, I64 -> List I64
-ensureSize = \list, len ->
-    if List.len list <= len then
-        newList = List.append list 0
-        ensureSize newList len
-    else
-        list
 
 
 read : List I64, I64 -> I64
@@ -97,47 +83,11 @@ read = \list, idx ->
 
 secondResult : List I64 -> I64
 secondResult = \data ->
-    initialTree = ListTree.empty
-    tree = getStartTree data 0 initialTree
+    last = getStart data 0 (List.repeat 30000000 -1)
     turn = List.len data
     idx = List.len data - 1
     num = read data idx
-    secondResultHelper tree turn num 0
-
-
-getStartTree : List I64, I64, List I64 -> List I64
-getStartTree = \nums, idx, tree ->
-    num = read nums idx
-    if num < 0 then
-        tree
-    else
-        newIdx = idx + 1
-        newTree = ListTree.insert tree num newIdx
-        getStartTree nums newIdx newTree
-
-
-secondResultHelper : List I64, I64, I64, I64 -> I64
-secondResultHelper = \last, turn, num, lastTurn ->
-    if turn < 300000 then
-        newTurn = turn + 1
-        newNum =
-            if lastTurn > 0 then
-                turn - lastTurn
-            else
-                0
-        newLastTurn =
-            when ListTree.get last newNum is
-                Ok n -> n
-                _ -> 0
-        newLast = ListTree.insert last newNum newTurn
-        secondResultHelper newLast newTurn newNum newLastTurn
-    else
-        num
-
-
-#      3000  0.5
-#     30000  3.0
-#    300000
+    getResultHelper last 30000000 turn num 0
 
 
 #  test data

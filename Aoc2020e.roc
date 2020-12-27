@@ -1,13 +1,13 @@
 app "aoc2020e"
     packages { base: "effect-platform" }
-    imports [ Day14, base.Task ]
+    imports [ Day15, base.Task ]
     provides [ aocMain ] to base
 
 
 aocMain : Task.Task {} as Fx
 aocMain =
-    Task.readFile "Day14.txt"
-        |> Task.after (\input -> Day14.output input
+    Task.readFile "Day15.txt"
+        |> Task.after (\input -> Day15.output input
             |> Task.writeData)
 
 
@@ -27,7 +27,7 @@ aocMain =
 #   12  923, 24769                    ero  ferry movement
 #   13  2947, 526090562196173         ero  buses modulo arithmetic
 #   14  9628746976360, 4574598714592  ero  memory addresses
-#   15  1522, ?                       ero  saying numbers
+#   15  1522, 18234                   ero  saying numbers
 #   16  21081, ?                      ero  ticket fields
 #   17
 #   18

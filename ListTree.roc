@@ -1,5 +1,5 @@
 interface ListTree
-    exposes [ empty, isEmpty, size, singleton, insert, get, toList ]
+    exposes [ empty, emptyWithConfig, isEmpty, size, singleton, insert, get, toList ]
     imports []
 
 
@@ -15,12 +15,32 @@ interface ListTree
 
 empty : List I64
 empty =
-    [ 0, 0 ]
+    emptyWithConfig 1
+
+
+emptyWithConfig : I64 -> List I64
+emptyWithConfig = \nodes ->
+    [ 0, 0, nodes, 4 ]
+
+
+allocNodes : List I64 -> I64
+allocNodes = \tree ->
+    read tree 2
+
+
+lastIndex : List I64 -> I64
+lastIndex = \tree ->
+    read tree 3
+
+
+setLastIndex : List I64, I64 -> List I64
+setLastIndex = \tree, val ->
+    List.set tree 3 val
 
 
 size : List I64 -> I64
 size = \tree ->
-    when (List.len tree - 2) // 5 is
+    when (lastIndex tree - 4) // 5 is
         Ok len -> len
         _ -> 0
 
@@ -32,7 +52,7 @@ isEmpty = \tree ->
 
 singleton : I64, I64 -> List I64
 singleton = \key, val ->
-    [ 2, 0, key, val, 2, 0, 0 ]
+    [ 4, 0, 1, 9, key, val, 2, 0, 0 ]
 
 
 get : List I64, I64 -> Result I64 I64
@@ -66,7 +86,7 @@ insert = \tree, key, val ->
     ptrIn = 0
 
     tree
-        |> List.set 1 0
+        |> setInserted 0
         |> insertHelp ptrOut ptrIn key val
         |> setPtrCol ptrOut 2
 
@@ -75,9 +95,7 @@ insertHelp : List I64, I64, I64, I64, I64 -> List I64
 insertHelp = \tree, ptrOut, ptrIn, key, val ->
     when getPtrNode tree ptrIn is
         0 ->
-            tree
-                |> addNode ptrOut key val 1 0 0
-                |> List.set 1 1
+            addNode tree ptrOut key val 1 0 0
 
         node ->
             nodeKey = getNodeKey tree node
@@ -92,14 +110,12 @@ insertHelp = \tree, ptrOut, ptrIn, key, val ->
                     |> insertHelp rgtIdx rgtIdx key val
                     |> balance ptrOut node
             else
-                tree
-                    |> setNodeVal node val
-                    |> setPtrNode ptrOut node
+                setNodeVal tree node val
 
 
 balance : List I64, I64, I64 -> List I64
 balance = \tree, ptrOut, node ->
-    if read tree 1 > 0 then
+    if inserted tree then
         rgtNode = getNodeRgt tree node
         rgtCol = getNodeCol tree rgtNode
         lftNode = getNodeLft tree node
@@ -140,14 +156,34 @@ balance = \tree, ptrOut, node ->
 
 
 addNode = \tree, ptrOut, key, val, col, lft, rgt ->
-    node = List.len tree
-    newTree = tree
-        |> List.append key
-        |> List.append val
-        |> List.append col
-        |> List.append lft
-        |> List.append rgt
-    setPtrNode newTree ptrOut node
+    node = lastIndex tree
+
+    newTree =
+        if node < List.len tree then
+            tree
+        else
+            buffer = List.repeat (5 * allocNodes tree) 0
+            List.concat tree buffer
+
+    newTree
+        |> List.set (node + 0) key
+        |> List.set (node + 1) val
+        |> List.set (node + 2) col
+        |> List.set (node + 3) lft
+        |> List.set (node + 4) rgt
+        |> setLastIndex (node + 5)
+        |> setInserted 1
+        |> setPtrNode ptrOut node
+
+
+setInserted : List I64, I64 -> List I64
+setInserted = \tree, flg ->
+    List.set tree 1 flg
+
+
+inserted : List I64 -> Bool
+inserted = \tree ->
+    read tree 1 > 0
 
 
 toList : List I64 -> List I64
