@@ -1,4 +1,4 @@
-interface Day16 exposes [ output ] imports [ ListZip ]
+interface Day16 exposes [ output ] imports [ ListZip, TestUtil ]
 
 
 output : List I64 -> List (List I64)
@@ -7,346 +7,367 @@ output = \puzzleInput ->
     testData2  = parseData testInput2
     puzzleData = parseData puzzleInput
 
-    #[ TestUtil.verify 16 1 1 (errorRate testData1 ) 71
-    #, TestUtil.show   16 1   (errorRate puzzleData)
-    #, TestUtil.verify 16 2 1 (fieldProduct 1 2 testData2 ) 143
-    #, TestUtil.show   16 2   (fieldProduct 0 5 puzzleData)
-    #]
-
-    fieldProduct 1 2 testData2
-    #fieldProduct 0 5 puzzleData
-
-
-Field : { idx : I64, min1 : I64, max1 : I64, min2 : I64, max2 : I64 }
-
-Ticket : List I64
-
-Notes : { fields : List Field, mine : Ticket, nearby : List Ticket }
+    [ TestUtil.verify 16 1 1 (errorRate testData1 ) 71
+    , TestUtil.show   16 1   (errorRate puzzleData)
+    , TestUtil.verify 16 2 1 (fieldProduct 1 2 testData2 ) 143
+    , TestUtil.show   16 2   (fieldProduct 0 5 puzzleData)
+    ]
 
 
 #  first part
 
 
-errorRate : Notes -> I64
-errorRate = \notes ->
-    sumOfInvalidValues notes.nearby notes.fields 0 0
+errorRate : List I64 -> I64
+errorRate = \data ->
+    maxFieldStart = getMyTicketIdx data
+    ticketIdx = getNearbyTicketIdx data
+    errorRateHelper data maxFieldStart ticketIdx 0
 
 
-sumOfInvalidValues : List Ticket, List Field, I64, I64 -> I64
-sumOfInvalidValues = \tickets, fields, idx, result ->
-    when List.get tickets idx is
-        Ok ticket ->
-            newIdx = idx + 1
-            newResult = result + (sumOfInvalidTicketValues ticket fields 0 0)
-            sumOfInvalidValues tickets fields newIdx newResult
+errorRateHelper : List I64, I64, I64, I64 -> I64
+errorRateHelper = \data, maxFieldStart, ticketIdx, rate ->
+    when List.get data ticketIdx is
+        Ok ticketVal ->
+            newTicketIdx = ticketIdx + 1
+            newRate = rate + ticketVal * (errorFactor data ticketVal maxFieldStart 1)
+            errorRateHelper data maxFieldStart newTicketIdx newRate
         _ ->
-            result
+            rate
 
 
 #  second part
 
 
-#  todo noch mehr highlevel programmieren, nicht schon vorher optimieren
-#  schleife über alle kombinationen: wenn noch möglich, prüfen, dann ev entfernen
+fieldProduct : I64, I64, List I64 -> I64
+fieldProduct = \minFieldNum, maxFieldNum, data ->
+    fieldCnt = getFieldCnt data
+    possibilities = determinePossibilities data fieldCnt
+
+    myTicketIdx = getMyTicketIdx data
+    productHelper data myTicketIdx possibilities maxFieldNum minFieldNum 1
 
 
-fieldProduct : I64, I64, Notes -> List (List I64)
-fieldProduct = \_fldMin, _fldMax, notes ->
-    validTickets = validTicketsHelper notes.nearby notes.fields 0 []
-    validNotes = { notes & nearby: validTickets }
+determinePossibilities : List I64, I64 -> List I64
+determinePossibilities = \data, fieldCnt ->
+    maxFieldStart = getMyTicketIdx data
+    ticketIdx = getNearbyTicketIdx data
+    validTicketIndexes = determineValidTicketIndexes data fieldCnt maxFieldStart ticketIdx 0 []
 
-    initial = allPossibilities notes.fields
-    final = processTicketField initial validNotes 0 0
+    initialPossibilities = List.repeat (fieldCnt * fieldCnt) 1
+    finalPossibilities = determinePossibilitiesHelper data fieldCnt validTicketIndexes initialPossibilities 0
 
-    List.join
-        [ initial.nums, [ initial.cnts ]
-        , final.nums, [ final.cnts ]
-        ]
+    collectFieldIndexes finalPossibilities fieldCnt 0 []
 
 
-validTicketsHelper : List Ticket, List Field, I64, List Ticket -> List Ticket
-validTicketsHelper = \tickets, fields, idx, result ->
-    when List.get tickets idx is
-        Ok ticket ->
-            newIdx = idx + 1
-            newResult =
-                if ticketIsValid ticket fields then
-                    List.join [ result, [ ticket] ]
-                else
-                    result
-            validTicketsHelper tickets fields newIdx newResult
-        _ ->
-            result
-
-
-ticketIsValid : Ticket, List Field -> Bool
-ticketIsValid = \ticket, fields ->
-    sumOfInvalidTicketValues ticket fields 0 0 == 0
-
-
-Possibilities : { nums : List (List I64), cnts : List I64 }
-
-
-allPossibilities : List Field -> Possibilities
-allPossibilities = \fields ->
-    allFieldNums = List.map fields (\field -> field.idx)
-    fieldCnt = List.len allFieldNums
-    { nums: List.repeat fieldCnt allFieldNums, cnts: List.repeat fieldCnt fieldCnt }
-
-
-processTicketField : Possibilities, Notes, I64, I64 -> Possibilities
-processTicketField = \possibilities, notes, ticketFieldNum, fieldNumIdx ->
-    when List.get possibilities.nums ticketFieldNum is
-        Ok fieldNums ->
-            when List.get fieldNums fieldNumIdx is
-                Ok fieldNum ->
-                    if fieldNumMatches notes ticketFieldNum fieldNum then
-                        newFieldNumIdx = fieldNumIdx + 1
-                        processTicketField possibilities notes ticketFieldNum newFieldNumIdx
-                    else
-                        newPossibilities = removeFieldNumMatch possibilities ticketFieldNum fieldNum
-                        processTicketField newPossibilities notes ticketFieldNum fieldNumIdx
-                _ ->
-                    newPossibilities = removeMatchedNum possibilities ticketFieldNum
-                    newTicketFieldNum = ticketFieldNum + 1
-                    processTicketField newPossibilities notes newTicketFieldNum 0
-        _ ->
-            possibilities
-
-
-fieldNumMatches : Notes, I64, I64 -> Bool
-fieldNumMatches = \notes, ticketFieldNum, fieldNum ->
-    when List.get notes.fields fieldNum is
-        Ok field ->
-            fieldMatchesAllTickets field ticketFieldNum notes.nearby 0
-        _ ->
-            False
-
-
-fieldMatchesAllTickets : Field, I64, List Ticket, I64 -> Bool
-fieldMatchesAllTickets = \field, ticketFieldNum, tickets, idx ->
-    when List.get tickets idx is
-        Ok ticket ->
-            when List.get ticket ticketFieldNum is
-                Ok value ->
-                    if valueMatchesField value field then
-                        newIdx = idx + 1
-                        fieldMatchesAllTickets field ticketFieldNum tickets newIdx
-                    else
-                        False
-                _ ->
-                    False
-        _ ->
-            True
-
-
-removeFieldNumMatch : Possibilities, I64, I64 -> Possibilities
-removeFieldNumMatch = \possibilities, ticketFieldNum, fieldNum ->
-    when List.get possibilities.nums ticketFieldNum is
-        Ok fieldNums ->
-            newFieldNums = removeFieldNum fieldNums fieldNum 0 []
-            newNums = List.set possibilities.nums ticketFieldNum newFieldNums
-            newPossibilities = { possibilities & nums: newNums }
-            decrementFieldCnt possibilities ticketFieldNum fieldNum
-        _ ->
-            possibilities
-
-
-removeFieldNum : List I64, I64, I64, List I64 -> List I64
-removeFieldNum = \nums, fieldNum, idx, result ->
-    when List.get nums idx is
-        Ok n ->
-            newIdx = idx + 1
-            newResult =
-                if n == fieldNum then
-                    result
-                else
-                    List.append result n
-            removeFieldNum nums fieldNum newIdx newResult
-        _ ->
-            result
-
-
-decrementFieldCnt : Possibilities, I64, I64 -> Possibilities
-decrementFieldCnt = \possibilities, ticketFieldNum, fieldNum ->
-    when List.get cnts fieldNum is
-        Ok n ->
-            newCnts = List.set cnts fieldNum (n - 1)
-            newPossibilities = { possibilities & cnts: newCnts }
-            if n == 2 then
-                removeOtherFieldNums newPossibilities ticketFieldNum fieldNum 0
+determineValidTicketIndexes : List I64, I64, I64, I64, I64, List I64 -> List I64
+determineValidTicketIndexes = \data, fieldCnt, maxFieldStart, ticketIdx, fieldIdx, result ->
+    when List.get data (ticketIdx + fieldIdx) is
+        Ok ticketVal ->
+            if errorFactor data ticketVal maxFieldStart 1 > 0 then
+                newTicketIdx = ticketIdx + fieldCnt
+                determineValidTicketIndexes data fieldCnt maxFieldStart newTicketIdx 0 result
             else
-                newPossibilities
+                newFieldIdx = fieldIdx + 1
+                if newFieldIdx < fieldCnt then
+                    determineValidTicketIndexes data fieldCnt maxFieldStart ticketIdx newFieldIdx result
+                else
+                    newTicketIdx = ticketIdx + fieldCnt
+                    newResult = List.append result ticketIdx
+                    determineValidTicketIndexes data fieldCnt maxFieldStart newTicketIdx 0 newResult
+        _ ->
+            result
+
+
+determinePossibilitiesHelper : List I64, I64, List I64, List I64, I64 -> List I64
+determinePossibilitiesHelper = \data, fieldCnt, validTicketIndexes, possibilities, possIdx ->
+    when List.get possibilities possIdx is
+        Ok possible ->
+            newPossIdx = possIdx + 1
+            newPossibilities =
+                if possible > 0 then
+                    when possIdx // fieldCnt is
+                        Ok fieldNum ->
+                            fieldStart = 1 + 4 * fieldNum
+                            fieldIdx = possIdx - fieldCnt * fieldNum
+                            if determinePossibility data fieldStart fieldIdx validTicketIndexes 0 > 0 then
+                                possibilities
+                            else
+                                removePossibility possibilities fieldCnt fieldNum fieldIdx
+                        _ ->
+                            possibilities
+                else
+                    possibilities
+            determinePossibilitiesHelper data fieldCnt validTicketIndexes newPossibilities newPossIdx
         _ ->
             possibilities
 
 
-removeOtherFieldNums : Possibilities, I64, I64, I64 -> Possibilities
-removeOtherFieldNums = \possibilities, ticketFieldNum, fieldNum, idx ->
-    when List.get possibilities.nums ticketFieldNum is
-        Ok fieldNums ->
-            when List.get fieldNums idx is
-                Ok n ->
-                    newIdx = idx + 1
-                    if n == fieldNum then
-                        removeOtherFieldNums possibilities ticketFieldNum fieldNum newIdx
+determinePossibility : List I64, I64, I64, List I64, I64 -> I64
+determinePossibility = \data, fieldStart, fieldIdx, validTicketIndexes, validTicketIdx ->
+    when List.get validTicketIndexes validTicketIdx is
+        Ok ticketIdx ->
+            valIdx = ticketIdx + fieldIdx
+            when List.get data valIdx is
+                Ok ticketVal ->
+                    if valError data ticketVal fieldStart > 0 then
+                        0
                     else
-                        newPossibilities = removeFieldNumMatch possibilities ticketFieldNum n
-                        removeOtherFieldNums newPossibilities ticketFieldNum fieldNum newIdx
+                        newValidTicketIdx = validTicketIdx + 1
+                        determinePossibility data fieldStart fieldIdx validTicketIndexes newValidTicketIdx
                 _ ->
-                    newNums = [ fieldNum ]
-                    { possibilities & nums: newNums }
+                    0
         _ ->
-            possibilities
+            1
 
 
-removeMatchedNum : Possibilities, I64 -> Possibilities
-removeMatchedNum = \possibilities, ticketFieldNum ->
-    when List.get possibilities.nums ticketFieldNum is
-        Ok fieldNums ->
-            if List.len fieldNums == 1 then
-                when List.get fieldNums 0 is
-                    Ok fieldNum ->
-                        removeMatchedFieldNum possibilities ticketFieldNum fieldNum 0
+removePossibility : List I64, I64, I64, I64 -> List I64
+removePossibility = \possibilities, fieldCnt, fieldNum, fieldIdx ->
+    possIdx = fieldNum * fieldCnt + fieldIdx
+    newPossibilities1 = List.set possibilities possIdx 0
+
+    newPossibilities2 =
+        when getSingleFieldNum newPossibilities1 fieldCnt fieldIdx 0 -1 is
+            Ok singleFieldNum ->
+                removeOtherFieldIdxs newPossibilities1 fieldCnt singleFieldNum fieldIdx 0
+            _ ->
+                newPossibilities1
+
+    when getSingleFieldIdx newPossibilities2 fieldCnt fieldNum 0 -1 is
+        Ok singleFieldIdx ->
+            removeOtherFieldNums newPossibilities2 fieldCnt singleFieldIdx fieldNum 0
+        _ ->
+            newPossibilities2
+
+
+collectFieldIndexes : List I64, I64, I64, List I64 -> List I64
+collectFieldIndexes = \possibilities, fieldCnt, fieldNum, result ->
+    if fieldNum < fieldCnt then
+        when getSingleFieldIdx possibilities fieldCnt fieldNum 0 -1 is
+            Ok fieldIdx ->
+                newFieldNum = fieldNum + 1
+                newResult = List.append result fieldIdx
+                collectFieldIndexes possibilities fieldCnt newFieldNum newResult
+            _ ->
+                result
+    else
+        result
+
+
+getSingleFieldNum : List I64, I64, I64, I64, I64 -> Result I64 I64
+getSingleFieldNum = \possibilities, fieldCnt, fieldIdx, fieldNum, result ->
+    if fieldNum < fieldCnt then
+        possIdx = fieldNum * fieldCnt + fieldIdx
+        when List.get possibilities possIdx is
+            Ok possibility ->
+                newFieldNum = fieldNum + 1
+                if possibility > 0 then
+                    if result < 0 then
+                        newResult = fieldNum + 0  # compiler error
+                        getSingleFieldNum possibilities fieldCnt fieldIdx newFieldNum newResult
+                    else
+                        Err fieldIdx
+                else
+                    getSingleFieldNum possibilities fieldCnt fieldIdx newFieldNum result
+            _ ->
+                Err fieldIdx
+    else if result < 0 then
+        Err fieldIdx
+    else
+        Ok result
+
+
+getSingleFieldIdx : List I64, I64, I64, I64, I64 -> Result I64 I64
+getSingleFieldIdx = \possibilities, fieldCnt, fieldNum, fieldIdx, result ->
+    if fieldIdx < fieldCnt then
+        possIdx = fieldNum * fieldCnt + fieldIdx
+        when List.get possibilities possIdx is
+            Ok possibility ->
+                newFieldIdx = fieldIdx + 1
+                if possibility > 0 then
+                    if result < 0 then
+                        newResult = fieldIdx + 0  # compiler error
+                        getSingleFieldIdx possibilities fieldCnt fieldNum newFieldIdx newResult
+                    else
+                        Err fieldNum
+                else
+                    getSingleFieldIdx possibilities fieldCnt fieldNum newFieldIdx result
+            _ ->
+                Err fieldNum
+    else if result < 0 then
+        Err fieldNum
+    else
+        Ok result
+
+
+removeOtherFieldNums : List I64, I64, I64, I64, I64 -> List I64
+removeOtherFieldNums = \possibilities, fieldCnt, fieldIdx, singleFieldNum, fieldNum ->
+    if fieldNum < fieldCnt then
+        newFieldNum = fieldNum + 1
+        newPossibilities =
+            if fieldNum == singleFieldNum then
+                possibilities
+            else
+                possIdx = fieldNum * fieldCnt + fieldIdx
+                when List.get possibilities possIdx is
+                    Ok possibility ->
+                        if possibility > 0 then
+                            removePossibility possibilities fieldCnt fieldNum fieldIdx
+                        else
+                            possibilities
                     _ ->
                         possibilities
-            else
+        removeOtherFieldNums newPossibilities fieldCnt fieldIdx singleFieldNum newFieldNum
+    else
+        possibilities
+
+
+removeOtherFieldIdxs : List I64, I64, I64, I64, I64 -> List I64
+removeOtherFieldIdxs = \possibilities, fieldCnt, fieldNum, singleFieldIdx, fieldIdx ->
+    if fieldIdx < fieldCnt then
+        newFieldIdx = fieldIdx + 1
+        newPossibilities =
+            if fieldIdx == singleFieldIdx then
                 possibilities
-        _ ->
-            possibilities
+            else
+                possIdx = fieldNum * fieldCnt + fieldIdx
+                when List.get possibilities possIdx is
+                    Ok possibility ->
+                        if possibility > 0 then
+                            removePossibility possibilities fieldCnt fieldNum fieldIdx
+                        else
+                            possibilities
+                    _ ->
+                        possibilities
+        removeOtherFieldIdxs newPossibilities fieldCnt fieldNum singleFieldIdx newFieldIdx
+    else
+        possibilities
 
 
-removeMatchedFieldNum : Possibilities, I64, I64, I64 -> Possibilities
-removeMatchedFieldNum = \possibilities, ticketFieldNum, fieldNum, idx ->
-    when List.get possibilities.nums idx is
-        Ok fieldNums ->
-            newPossibilities =
-                if idx == ticketFieldNum then
-                    possibilities
-                else if contains fieldNums fieldNum 0 then
-                    removeFieldNumMatch possibilities idx fieldNum
-            newIdx = idx + 1
-            removeMatchedFieldNum newPossibilities ticketFieldNum fieldNum newIdx
-        _ ->
-            possibilities
+productHelper : List I64, I64, List I64, I64, I64, I64 -> I64
+productHelper = \data, myTicketIdx, possibilities, maxFieldNum, fieldNum, result ->
+    if fieldNum > maxFieldNum then
+        result
+    else
+        when List.get possibilities fieldNum is
+            Ok fieldIdx ->
+                when List.get data (myTicketIdx + fieldIdx) is
+                    Ok ticketVal ->
+                        newFieldNum = fieldNum + 1
+                        newResult = result * ticketVal
+                        productHelper data myTicketIdx possibilities maxFieldNum newFieldNum newResult
+                    _ ->
+                        0
+            _ ->
+                0
 
 
 #  utils
 
 
-sumOfInvalidTicketValues : Ticket, List Field, I64, I64 -> I64
-sumOfInvalidTicketValues = \ticket, fields, idx, result ->
-    when List.get ticket idx is
-        Ok value ->
-            newIdx = idx + 1
-            newResult =
-                if valueMatchesAnyField value fields 0 then
-                    result
-                else
-                    result + value
-            sumOfInvalidTicketValues ticket fields newIdx newResult
-        _ ->
-            result
+getFieldCnt : List I64 -> I64
+getFieldCnt = \data ->
+    safeGet data 0
 
 
-valueMatchesAnyField : I64, List Field, I64 -> Bool
-valueMatchesAnyField = \value, fields, idx ->
-    when List.get fields idx is
-        Ok field ->
-            if valueMatchesField value field then
-                True
-            else
-                newIdx = idx + 1
-                valueMatchesAnyField value fields newIdx
-        _ ->
-            False
+getMyTicketIdx : List I64 -> I64
+getMyTicketIdx = \data ->
+    1 + (getFieldCnt data) * 4
 
 
-valueMatchesField : I64, Field -> Bool
-valueMatchesField = \value, field ->
-    (field.min1 <= value && value <= field.max1) || (field.min2 <= value && value <= field.max2)
+getNearbyTicketIdx : List I64 -> I64
+getNearbyTicketIdx = \data ->
+    1 + (getFieldCnt data) * 5
+
+
+errorFactor : List I64, I64, I64, I64 -> I64
+errorFactor = \data, ticketVal, maxFieldStart, fieldStart ->
+    if fieldStart < maxFieldStart then
+        if valError data ticketVal fieldStart > 0 then
+            newFieldIdx = fieldStart + 4
+            errorFactor data ticketVal maxFieldStart newFieldIdx
+        else
+            0
+    else
+        1
+
+
+valError : List I64, I64, I64 -> I64
+valError = \data, ticketVal, fieldStart ->
+    min1 = safeGet data (fieldStart + 0)
+    max1 = safeGet data (fieldStart + 1)
+    min2 = safeGet data (fieldStart + 2)
+    max2 = safeGet data (fieldStart + 3)
+    if (min1 <= ticketVal && ticketVal <= max1) || (min2 <= ticketVal && ticketVal <= max2) then
+        0
+    else
+        1
+
+
+safeGet : List I64, I64 -> I64
+safeGet = \list, idx ->
+    when List.get list idx is
+        Ok n -> n
+        _ -> 0
 
 
 #  parser
 
 
-parseData : List I64 -> Notes
+parseData : List I64 -> List I64
 parseData = \input ->
     zip = ListZip.newAtFirst input 0
 
-    fields = parseFieldList zip input
-    mine = parseTicket fields.zip input
-    nearby = parseTicketList mine.zip input
+    fieldInts = parseFieldInts zip input [ 0 ]
+    fieldCnt =
+        when (List.len fieldInts.val - 1) // 4 is
+            Ok n -> n
+            _ -> 0
+    fieldIntsWithFieldCnt = List.set fieldInts.val 0 fieldCnt
 
-    { fields: fields.val, mine: mine.val, nearby: nearby.val }
+    parseTicketInts fieldInts.zip input fieldIntsWithFieldCnt
 
 
 Res a : { zip : ListZip.Zip, val : a }
 
 
-parseFieldList : ListZip.Zip, List I64 -> Res (List Field)
-parseFieldList = \zip, input ->
-    parseFieldListHelper zip input []
-
-
-parseFieldListHelper : ListZip.Zip, List I64, List Field -> Res (List Field)
-parseFieldListHelper = \zip, input, result ->
+parseFieldInts : ListZip.Zip, List I64, List I64 -> Res (List I64)
+parseFieldInts = \zip, input, result ->
     if zip.val == 10 then
         { zip, val: result }
     else
-        idx = List.len result
-        res = parseField zip input idx
-        newResult = List.join [ result, [ res.val ] ]
-        parseFieldListHelper res.zip input newResult
+        min1 = parseInt zip input
+        max1 = parseInt min1.zip input
+        min2 = parseInt max1.zip input
+        max2 = parseInt min2.zip input
+        eol = ListZip.forward max2.zip input
+
+        newResult = List.concat result [ min1.val, max1.val, min2.val, max2.val ]
+        parseFieldInts eol input newResult
 
 
-parseField : ListZip.Zip, List I64, I64 -> Res Field
-parseField = \zip, input, idx ->
-    min1 = parseInt zip input
-    max1 = parseInt min1.zip input
-    min2 = parseInt max1.zip input
-    max2 = parseInt min2.zip input
-    eol = ListZip.forward max2.zip input
-
-    field = { idx, min1: min1.val, max1: max1.val, min2: min2.val, max2: max2.val }
-    { zip: eol, val: field }
-
-
-parseTicketList : ListZip.Zip, List I64 -> Res (List Ticket)
-parseTicketList = \zip, input ->
-    parseTicketListHelper zip input []
-
-
-parseTicketListHelper : ListZip.Zip, List I64, List Ticket -> Res (List Ticket)
-parseTicketListHelper = \zip, input, result ->
+parseTicketInts : ListZip.Zip, List I64, List I64 -> List I64
+parseTicketInts = \zip, input, result ->
     if ListZip.afterLast zip then
-        { zip, val: result }
-    else
-        res = parseTicket zip input
-        newResult = List.join [ result, [ res.val ] ]
-        parseTicketListHelper res.zip input newResult
-
-
-parseTicket : ListZip.Zip, List I64 -> Res Ticket
-parseTicket = \zip, input ->
-    newZip = moveToDigit zip input
-    parseTicketHelper newZip input []
-
-
-parseTicketHelper : ListZip.Zip, List I64, List I64 -> Res Ticket
-parseTicketHelper = \zip, input, result ->
-    if zip.val == 10 || ListZip.afterLast zip then
-        { zip, val: result }
+        result
     else
         res = parseInt zip input
         newResult = List.append result res.val
-        parseTicketHelper res.zip input newResult
+        parseTicketInts res.zip input newResult
 
 
 parseInt : ListZip.Zip, List I64 -> Res I64
 parseInt = \zip, input ->
     digit = moveToDigit zip input
     parseIntHelper digit input 0
+
+
+moveToDigit : ListZip.Zip, List I64 -> ListZip.Zip
+moveToDigit = \zip, input ->
+    if 48 <= zip.val && zip.val <= 57 then
+        zip
+    else
+        newZip = ListZip.forward zip input
+        moveToDigit newZip input
 
 
 parseIntHelper : ListZip.Zip, List I64, I64 -> Res I64
@@ -357,15 +378,6 @@ parseIntHelper = \zip, input, num ->
         parseIntHelper newZip input newNum
     else
         { zip: newZip, val: newNum }
-
-
-moveToDigit : ListZip.Zip, List I64 -> ListZip.Zip
-moveToDigit = \zip, input ->
-    if 48 <= zip.val && zip.val <= 57 then
-        zip
-    else
-        newZip = ListZip.forward zip input
-        moveToDigit newZip input
 
 
 #  test data
@@ -390,9 +402,9 @@ testInput1 =
 
 testInput2 : List I64
 testInput2 =
-    [ 99, 108, 97, 115, 115, 58, 32, 49, 45, 49, 32, 111, 114, 32, 52, 45, 49, 57, 10
-    , 114, 111, 119, 58, 32, 49, 45, 53, 32, 111, 114, 32, 56, 45, 49, 57, 10
-    , 115, 101, 97, 116, 58, 32, 49, 45, 49, 51, 32, 111, 114, 32, 49, 54, 45, 49, 57, 10
+    [ 99, 108, 97, 115, 115, 58, 32, 48, 45, 49, 32, 111, 114, 32, 52, 45, 49, 57, 10
+    , 114, 111, 119, 58, 32, 48, 45, 53, 32, 111, 114, 32, 56, 45, 49, 57, 10
+    , 115, 101, 97, 116, 58, 32, 48, 45, 49, 51, 32, 111, 114, 32, 49, 54, 45, 49, 57, 10
     , 10
     , 121, 111, 117, 114, 32, 116, 105, 99, 107, 101, 116, 58, 10
     , 49, 49, 44, 49, 50, 44, 49, 51, 10
