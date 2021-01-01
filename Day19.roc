@@ -1,259 +1,278 @@
-interface Day19 exposes [ output ] imports [ ListZip ]
+interface Day19 exposes [ output ] imports [ TestUtil ]
 
 
 output : List I64 -> List (List I64)
-output = \_puzzleInput ->
-    testData   = parseData testInput
-    #puzzleData = parseData puzzleInput
+output = \puzzleInput ->
+    testData1  = parseData testInput1
+    testData2  = parseData testInput2
+    puzzleData = parseData puzzleInput
 
-    #[ TestUtil.verify 19 1 1 (firstResult testData  ) 2
-    #, TestUtil.show   19 1   (firstResult puzzleData)
-    #, TestUtil.verify 19 2 1 (secondResult testData  ) 0
-    #, TestUtil.show   19 2   (secondResult puzzleData)
-    #]
-
-    when List.get testData.msgs 0 is
-        Ok msg ->
-            zip = ListZip.newAtFirst msg 0
-            res = checkRuleNum testData zip msg 4
-            [ [ 4, res.zip.idx, res.zip.val, if res.val then 1 else 0 ] ]
-        _ ->
-            [ [ 0 ] ]
-
-
-Rule : { num : I64, type : I64, char : I64, rules1 : List I64, rules2 : List I64  }
-
-Message : List I64
-
-PuzzleData : { rules : List Rule, ruleIdxs : List I64, msgs : List Message }
+    [ TestUtil.verify 19 1 1 (firstResult testData1 ) 2
+    , TestUtil.verify 19 1 2 (firstResult testData2 ) 3
+    , TestUtil.show   19 1   (firstResult puzzleData)
+    , TestUtil.verify 19 2 1 (secondResult testData2 ) 12
+    , TestUtil.show   19 2   (secondResult puzzleData)
+    ]
 
 
 #  first part
 
 
-#firstResult : PuzzleData -> I64
-#firstResult = \data ->
-#    valid = firstResultHelper data 0 []
-#    List.len valid
+firstResult : List I64 -> I64
+firstResult = \data ->
+    countValidMsgs data (getSafe data 0) 0
 
 
-#firstResultHelper : PuzzleData, I64, List Message -> List Message
-#firstResultHelper = \data, idx, result ->
-#    when List.get data.msgs idx is
-#        Ok msg ->
-#            newIdx = idx + 1
-#            newResult =
-#                if isValid data msg then
-#                    List.join [ result, [ msg ] ]
-#                else
-#                    result
-#            firstResultHelper data newIdx newResult
-#        _ ->
-#            result
-
-
-#isValid : PuzzleData, Message -> Bool
-#isValid = \data, msg ->
-#    zip = ListZip.newAtFirst msg 0
-#    checked = checkRuleNum data zip msg 0
-#    checked.val && ListZip.afterLast checked.zip
-
-
-checkRuleNum : PuzzleData, ListZip.Zip, Message, I64 -> Res Bool
-checkRuleNum = \data, zip, msg, ruleNum ->
-    when List.get data.ruleIdxs ruleNum is
-        Ok ruleIdx -> checkRuleIdx data zip msg ruleIdx
-        _ -> { zip, val: False }
-
-
-checkRuleIdx : PuzzleData, ListZip.Zip, Message, I64 -> Res Bool
-checkRuleIdx = \data, zip, msg, ruleIdx ->
-    when List.get data.rules ruleIdx is
-        Ok rule ->
-            when rule.type is
-                1 ->
-                    #checkSequence data zip msg rule.rules1 0
-                    { zip, val: False }
-                2 ->
-                    #res1 = checkSequence data zip msg rule.rules1 0
-                    #if res1.val then
-                    #    res1
-                    #else
-                    #    checkSequence data zip msg rule.rules2 0
-                    { zip, val: False }
-                3 ->
-                    checkChar zip msg rule.char
-                _ ->
-                    { zip, val: False }
-        _ ->
-            { zip, val: False }
-
-
-#checkSequence : PuzzleData, ListZip.Zip, Message, List I64, I64 -> Res Bool
-#checkSequence = \data, zip, msg, seq, seqIdx ->
-#    when List.get seq seqIdx is
-#        Ok ruleNum ->
-#            res = checkRuleNum data zip msg ruleNum
-#            if res.val then
-#                newSeqIdx = seqIdx + 1
-#                checkSequence data res.zip msg seq newSeqIdx
-#            else
-#                res
-#        _ ->
-#            { zip, val: True }
-
-
-checkChar : ListZip.Zip, Message, I64 -> Res Bool
-checkChar = \zip, msg, ruleChar ->
-    if ruleChar > 0 && zip.val == ruleChar then
-        newZip = ListZip.forward zip msg
-        { zip: newZip, val: True }
+countValidMsgs : List I64, I64, I64 -> I64
+countValidMsgs = \data, msgIdx, cnt ->
+    if msgIdx < List.len data then
+        newMsgIdx = isValid data msgIdx
+        if newMsgIdx > 0 then
+            countValidMsgs data (newMsgIdx + 1) (cnt + 1)
+        else
+            countValidMsgs data (1 - newMsgIdx) cnt
     else
-        { zip, val: False }
+        cnt
+
+
+isValid : List I64, I64 -> I64
+isValid = \data, msgIdx ->
+    eom = nextDelimiter data msgIdx
+    afterMatch = match data 0 msgIdx
+    if afterMatch == eom then
+        eom
+    else
+        -eom
 
 
 #  second part
 
 
-#secondResult : PuzzleData -> I64
-#secondResult = \data ->
-#    2 * List.len data.rules
+#   8: 42     ->  42{n}         n >= 1
+#  11: 42 31  ->  42{n} 31{n}   n >= 1
+#  ---
+#   0: 8 11  =  42 42 31  ->  42{n+m} 31{m}  n, m >= 1
+
+
+secondResult : List I64 -> I64
+secondResult = \data ->
+    countValidMsgs2 data (getSafe data 0) 0
+
+
+countValidMsgs2 : List I64, I64, I64 -> I64
+countValidMsgs2 = \data, msgIdx, cnt ->
+    if msgIdx < List.len data then
+        newMsgIdx = isValid2 data msgIdx
+        if newMsgIdx > 0 then
+            countValidMsgs2 data (newMsgIdx + 1) (cnt + 1)
+        else
+            countValidMsgs2 data (1 - newMsgIdx) cnt
+    else
+        cnt
+
+
+isValid2 : List I64, I64 -> I64
+isValid2 = \data, msgIdx ->
+    eom = nextDelimiter data msgIdx
+
+    newMsgIdx = match data 42 msgIdx
+    if newMsgIdx > 0 then
+        match2 data eom newMsgIdx 0
+    else
+        -eom
+
+
+match2 : List I64, I64, I64, I64 -> I64
+match2 = \data, eom, msgIdx, sufLen ->
+    newMsgIdx1 = match data 42 msgIdx
+    if newMsgIdx1 > 0 then
+        newMsgIdx2 = match data 31 newMsgIdx1
+        if newMsgIdx2 > 0 then
+            afterMatch = matchSuffix data eom newMsgIdx2 sufLen
+            if afterMatch == eom then
+                eom
+            else
+                match2 data eom newMsgIdx1 (sufLen + 1)
+        else
+            match2 data eom newMsgIdx1 (sufLen + 1)
+    else
+        -eom
+
+
+matchSuffix : List I64, I64, I64, I64 -> I64
+matchSuffix = \data, eom, msgIdx, cnt ->
+    if msgIdx == eom then
+        eom
+    else if cnt > 0 then
+        newMsgIdx = match data 31 msgIdx
+        if newMsgIdx > 0 then
+            matchSuffix data eom newMsgIdx (cnt - 1)
+        else
+            -eom
+    else
+        -eom
+
+
+#  util
+
+
+match : List I64, I64, I64 -> I64
+match = \data, ruleNum, msgIdx ->
+    ruleIdx = getSafe data (ruleNum + 1)
+    when getSafe data ruleIdx is
+        -34 -> matchChar data (ruleIdx + 1) msgIdx
+        -58 -> matchSequence data (ruleIdx + 1) msgIdx
+        -124 -> matchAlternative data (ruleIdx + 1) msgIdx
+        _ -> -msgIdx
+
+
+matchChar : List I64, I64, I64 -> I64
+matchChar = \data, ruleIdx, msgIdx ->
+    if getSafe data msgIdx == getSafe data ruleIdx then
+        msgIdx + 1
+    else
+        -msgIdx
+
+
+matchSequence : List I64, I64, I64 -> I64
+matchSequence = \data, ruleIdx, msgIdx ->
+    ruleNum = getSafe data ruleIdx
+    if ruleNum < 0 then
+        msgIdx
+    else
+        newMsgIdx = match data ruleNum msgIdx
+        if newMsgIdx > 0 then
+            matchSequence data (ruleIdx + 1) newMsgIdx
+        else
+            newMsgIdx
+
+
+matchAlternative : List I64, I64, I64 -> I64
+matchAlternative = \data, ruleIdx, msgIdx ->
+    newMsgIdx = matchSequence data ruleIdx msgIdx
+    if newMsgIdx > 0 then
+        newMsgIdx
+    else
+        newRuleIdx = nextDelimiter data ruleIdx
+        if getSafe data newRuleIdx == -124 then
+            matchAlternative data (newRuleIdx + 1) msgIdx
+        else
+            -newRuleIdx
+
+
+nextDelimiter : List I64, I64 -> I64
+nextDelimiter = \data, idx ->
+    if getSafe data idx < 0 then
+        idx
+    else
+        nextDelimiter data (idx + 1)
+
+
+getSafe : List I64, I64 -> I64
+getSafe = \list, idx ->
+    when List.get list idx is
+        Ok val -> val
+        _ -> -1
 
 
 #  parser
 
 
-parseData : List I64 -> PuzzleData
+parseData : List I64 -> List I64
 parseData = \input ->
-    start = ListZip.newAtFirst input 0
-    rules = parseRules start input
-    ruleIdxs = buildRuleIdxs rules.val
-    msgs = parseMessages rules.zip input
-    { rules: rules.val, ruleIdxs, msgs: msgs.val }
+    parseDataHelper input 0 0 [] 0 []
 
 
-Res a : { zip : ListZip.Zip, val : a }
-
-
-parseRules : ListZip.Zip, List I64 -> Res (List Rule)
-parseRules = \zip, input ->
-    parseRulesHelper zip input []
-
-
-parseRulesHelper : ListZip.Zip, List I64, List Rule -> Res (List Rule)
-parseRulesHelper = \zip, input, rules ->
-    if zip.val == 10 then
-        newZip = ListZip.forward zip input
-        { zip: newZip, val: rules }
-    else
-        rule = parseRule zip input
-        newRules = List.join [ rules, [ rule.val ] ]
-        parseRulesHelper rule.zip input newRules
-
-
-parseRule : ListZip.Zip, List I64 -> Res Rule
-parseRule = \zip, input ->
-    num = parseInt zip input
-    col = ListZip.move num.zip input 2
-    if col.val == 34 then
-        char = ListZip.forward col input
-        rule = { num: num.val, type: 3, char: char.val, rules1: [], rules2: [] }
-        newZip = ListZip.move char input 3
-        { zip: newZip, val: rule }
-    else
-        rule = { num: num.val, type: 1, char: 0, rules1: [], rules2: [] }
-        parseRuleData col input rule []
-
-
-parseRuleData : ListZip.Zip, List I64, Rule, List I64 -> Res Rule
-parseRuleData = \zip, input, rule, data ->
-    when zip.val is
-        32 ->
-            newZip = ListZip.forward zip input
-            parseRuleData newZip input rule data
-        124 ->
-            newZip = ListZip.move zip input 2
-            newRule = { rule & type: 2, rules1: data }
-            parseRuleData newZip input newRule []
-        10 ->
-            newZip = ListZip.forward zip input
-            newRule =
-                if rule.type == 2 then
-                    { rule & rules2: data }
-                else
-                    { rule & rules1: data }
-            { zip: newZip, val: newRule }
-        _ ->
-            num = parseInt zip input
-            newData = List.append data num.val
-            parseRuleData num.zip input rule newData
-
-
-parseInt : ListZip.Zip, List I64 -> Res I64
-parseInt = \zip, input ->
-    parseIntHelper zip input 0
-
-
-parseIntHelper : ListZip.Zip, List I64, I64 -> Res I64
-parseIntHelper = \zip, input, num ->
-    if 48 <= zip.val && zip.val <= 57 then
-        newZip = ListZip.forward zip input
-        newNum = num * 10 + zip.val - 48
-        parseIntHelper newZip input newNum
-    else
-        { zip, val: num }
-
-
-buildRuleIdxs : List Rule -> List I64
-buildRuleIdxs = \rules ->
-    ruleIdxs = List.repeat (List.len rules) 0
-    buildRuleIdxsHelper rules 0 ruleIdxs
-
-
-buildRuleIdxsHelper : List Rule, I64, List I64 -> List I64
-buildRuleIdxsHelper = \rules, idx, ruleIdxs ->
-    when List.get rules idx is
-        Ok rule ->
+parseDataHelper : List I64, I64, I64, List I64, I64, List I64 -> List I64
+parseDataHelper = \input, idx, num, indexes, start, result ->
+    when List.get input idx is
+        Ok val ->
+            #  new input index
             newIdx = idx + 1
-            newRuleIdx = List.set ruleIdxs rule.num idx
-            buildRuleIdxsHelper rules newIdx newRuleIdx
+
+            if 48 <= val && val <= 57 then
+                #  add digit to num
+                newNum = num * 10 + val - 48
+                parseDataHelper input newIdx newNum indexes start result
+
+            else
+                #  determine rulesToMessages switch
+                rulesToMessages =
+                    if val == 10 && List.len result == start then
+                        1
+                    else
+                        0
+
+                #  new rule indexes
+                newIndexes =
+                    if val == 58 then
+                        setSafe indexes num start
+                    else
+                        indexes
+
+                #  prepend message and rule indexes
+                newResult1 =
+                    if rulesToMessages > 0 then
+                        increase = List.len newIndexes + 1
+                        prepend = List.map newIndexes (\i -> i + increase)
+                        List.join [ [ increase + List.len result ], prepend, result ]
+                    else
+                        result
+
+                #  append num if set
+                newResult2 =
+                    if num > 0 && val != 58 then
+                        List.append newResult1 num
+                    else
+                        newResult1
+
+                #  append val
+                newResult3 =
+                    if val == 32 || val == 34 || (val == 10 && rulesToMessages > 0) then
+                        newResult2
+                    else if val == 10 || val == 58 || val == 124 then
+                        List.append newResult2 -val
+                    else
+                        List.append newResult2 val
+
+                #  set rule type
+                newResult4 =
+                    if val == 34 || val == 124 then
+                        List.set newResult3 start -val
+                    else
+                        newResult3
+
+                #  new start
+                newStart =
+                    if val == 10 then
+                        List.len newResult4
+                    else
+                        start
+
+                #  recurse with num == 0
+                parseDataHelper input newIdx 0 newIndexes newStart newResult4
+
         _ ->
-            ruleIdxs
+            #  add final lf
+            List.append result -10
 
 
-parseMessages : ListZip.Zip, List I64 -> Res (List Message)
-parseMessages = \zip, input ->
-    parseMessagesHelper zip input []
-
-
-parseMessagesHelper : ListZip.Zip, List I64, List Message -> Res (List Message)
-parseMessagesHelper = \zip, input, messages ->
-    if ListZip.afterLast zip then
-        { zip, val: messages }
+setSafe : List I64, I64, I64 -> List I64
+setSafe = \list, idx, val ->
+    add = idx - List.len list
+    if add < 0 then
+        List.set list idx val
+    else if add > 0 then
+        List.join [ list, List.repeat add 0, [ val ] ]
     else
-        message = parseMessage zip input []
-        newMessages = List.join [ messages, [ message.val ] ]
-        parseMessagesHelper message.zip input newMessages
-
-
-parseMessage : ListZip.Zip, List I64, Message -> Res Message
-parseMessage = \zip, input, message ->
-    if ListZip.afterLast zip then
-        { zip, val: message }
-    else
-        newZip = ListZip.forward zip input
-        if zip.val == 10 then
-            { zip: newZip, val: message }
-        else
-            newMessage = List.append message zip.val
-            parseMessage newZip input newMessage
+        List.append list val
 
 
 #  test data
 
 
-testInput : List I64
-testInput =
+testInput1 : List I64
+testInput1 =
     [ 48, 58, 32, 52, 32, 49, 32, 53, 10
     , 49, 58, 32, 50, 32, 51, 32, 124, 32, 51, 32, 50, 10
     , 50, 58, 32, 52, 32, 52, 32, 124, 32, 53, 32, 53, 10
@@ -266,4 +285,56 @@ testInput =
     , 97, 98, 98, 98, 97, 98, 10
     , 97, 97, 97, 98, 98, 98, 10
     , 97, 97, 97, 97, 98, 98, 98
+    ]
+
+
+testInput2 : List I64
+testInput2 =
+    [ 52, 50, 58, 32, 57, 32, 49, 52, 32, 124, 32, 49, 48, 32, 49, 10
+    , 57, 58, 32, 49, 52, 32, 50, 55, 32, 124, 32, 49, 32, 50, 54, 10
+    , 49, 48, 58, 32, 50, 51, 32, 49, 52, 32, 124, 32, 50, 56, 32, 49, 10
+    , 49, 58, 32, 34, 97, 34, 10
+    , 49, 49, 58, 32, 52, 50, 32, 51, 49, 10
+    , 53, 58, 32, 49, 32, 49, 52, 32, 124, 32, 49, 53, 32, 49, 10
+    , 49, 57, 58, 32, 49, 52, 32, 49, 32, 124, 32, 49, 52, 32, 49, 52, 10
+    , 49, 50, 58, 32, 50, 52, 32, 49, 52, 32, 124, 32, 49, 57, 32, 49, 10
+    , 49, 54, 58, 32, 49, 53, 32, 49, 32, 124, 32, 49, 52, 32, 49, 52, 10
+    , 51, 49, 58, 32, 49, 52, 32, 49, 55, 32, 124, 32, 49, 32, 49, 51, 10
+    , 54, 58, 32, 49, 52, 32, 49, 52, 32, 124, 32, 49, 32, 49, 52, 10
+    , 50, 58, 32, 49, 32, 50, 52, 32, 124, 32, 49, 52, 32, 52, 10
+    , 48, 58, 32, 56, 32, 49, 49, 10
+    , 49, 51, 58, 32, 49, 52, 32, 51, 32, 124, 32, 49, 32, 49, 50, 10
+    , 49, 53, 58, 32, 49, 32, 124, 32, 49, 52, 10
+    , 49, 55, 58, 32, 49, 52, 32, 50, 32, 124, 32, 49, 32, 55, 10
+    , 50, 51, 58, 32, 50, 53, 32, 49, 32, 124, 32, 50, 50, 32, 49, 52, 10
+    , 50, 56, 58, 32, 49, 54, 32, 49, 10
+    , 52, 58, 32, 49, 32, 49, 10
+    , 50, 48, 58, 32, 49, 52, 32, 49, 52, 32, 124, 32, 49, 32, 49, 53, 10
+    , 51, 58, 32, 53, 32, 49, 52, 32, 124, 32, 49, 54, 32, 49, 10
+    , 50, 55, 58, 32, 49, 32, 54, 32, 124, 32, 49, 52, 32, 49, 56, 10
+    , 49, 52, 58, 32, 34, 98, 34, 10
+    , 50, 49, 58, 32, 49, 52, 32, 49, 32, 124, 32, 49, 32, 49, 52, 10
+    , 50, 53, 58, 32, 49, 32, 49, 32, 124, 32, 49, 32, 49, 52, 10
+    , 50, 50, 58, 32, 49, 52, 32, 49, 52, 10
+    , 56, 58, 32, 52, 50, 10
+    , 50, 54, 58, 32, 49, 52, 32, 50, 50, 32, 124, 32, 49, 32, 50, 48, 10
+    , 49, 56, 58, 32, 49, 53, 32, 49, 53, 10
+    , 55, 58, 32, 49, 52, 32, 53, 32, 124, 32, 49, 32, 50, 49, 10
+    , 50, 52, 58, 32, 49, 52, 32, 49, 10
+    , 10
+    , 97, 98, 98, 98, 98, 98, 97, 98, 98, 98, 97, 97, 97, 97, 98, 97, 98, 98, 97, 97, 98, 98, 98, 98, 97, 98, 97, 98, 97, 98, 98, 98, 97, 98, 98, 98, 98, 98, 98, 97, 98, 97, 97, 97, 97, 10
+    , 98, 98, 97, 98, 98, 98, 98, 97, 97, 98, 97, 97, 98, 98, 97, 10
+    , 98, 97, 98, 98, 98, 98, 97, 97, 98, 98, 98, 98, 98, 97, 98, 98, 98, 98, 98, 98, 97, 97, 98, 97, 97, 97, 98, 97, 97, 97, 10
+    , 97, 97, 97, 98, 98, 98, 98, 98, 98, 97, 97, 97, 97, 98, 97, 97, 98, 97, 98, 97, 97, 98, 97, 98, 97, 98, 98, 97, 98, 97, 97, 97, 98, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 97, 97, 10
+    , 98, 98, 98, 98, 98, 98, 98, 97, 97, 97, 97, 98, 98, 98, 98, 97, 97, 97, 98, 98, 97, 98, 97, 97, 97, 10
+    , 98, 98, 98, 97, 98, 97, 98, 98, 98, 98, 97, 97, 97, 97, 97, 97, 97, 97, 98, 98, 97, 98, 97, 98, 97, 97, 97, 98, 97, 98, 97, 97, 98, 97, 98, 10
+    , 97, 98, 97, 98, 97, 97, 97, 97, 97, 97, 98, 97, 97, 97, 98, 10
+    , 97, 98, 97, 98, 97, 97, 97, 97, 97, 98, 98, 98, 97, 98, 97, 10
+    , 98, 97, 97, 98, 98, 97, 97, 97, 97, 98, 98, 97, 97, 97, 97, 98, 97, 98, 98, 97, 97, 98, 97, 98, 98, 10
+    , 97, 98, 98, 98, 98, 97, 98, 98, 98, 98, 97, 97, 97, 97, 98, 97, 98, 98, 98, 98, 98, 98, 97, 97, 97, 97, 98, 97, 98, 98, 10
+    , 97, 97, 97, 97, 97, 98, 98, 97, 97, 98, 97, 97, 97, 97, 97, 98, 97, 98, 97, 97, 10
+    , 97, 97, 97, 97, 98, 98, 97, 97, 97, 97, 98, 98, 97, 97, 97, 10
+    , 97, 97, 97, 97, 98, 98, 97, 97, 98, 98, 97, 97, 97, 97, 97, 97, 97, 98, 98, 98, 97, 98, 98, 98, 97, 97, 97, 98, 98, 97, 97, 98, 97, 97, 97, 10
+    , 98, 97, 98, 97, 97, 97, 98, 98, 98, 97, 97, 97, 98, 97, 97, 98, 97, 98, 98, 97, 97, 98, 97, 98, 97, 98, 97, 97, 97, 98, 10
+    , 97, 97, 98, 98, 98, 98, 98, 97, 97, 98, 98, 98, 97, 97, 97, 97, 97, 97, 98, 98, 98, 98, 98, 97, 98, 97, 98, 97, 97, 97, 97, 97, 98, 98, 97, 97, 97, 98, 98, 97
     ]
