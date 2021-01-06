@@ -1,121 +1,220 @@
 interface ListTree
-    exposes [ empty, emptyWithConfig, isEmpty, size, singleton, insert, get, toList ]
+    exposes
+        [ empty, emptyWithConfig, size
+        , insert, insertN, insertP
+        , get, getN, find, setI, getP, setP
+        , firstP, nextP, keyP
+        , keys, vals, walk, walkP
+        ]
     imports []
 
 
-#  Der ganze Baum wird als List I64 abgebildet
-#  Ein Knoten besteht aus 5 I64 Einträgen: key, value, color, left, right
-#  Red ist 1, Black ist 2
-#  Left und Right sind die Adressen vom jeweiligen SubTree Root Node
-#  Die Adresse vom obersten Root Node steht im ersten Element der Liste
-#  Im zweiten Element steht, ob beim Insert ein neuer Eintrag erstellt wurde
-#  Empty wird durch Adresse 0 dargestellt
-#  Wenn eine Funktion einen Node zurückgibt, muss die Adresse vom Pointer als Parameter übergeben werden
+#  admin values
+#    0: root node
+#    1: found node
+#    2: inserted node
+#    3: nodes to allocate (default 1)
+#    4: values per node (default 1)
+#    5: used list size
+
+#  per node
+#    0: key
+#    1: color
+#    2: left subtree
+#    3: right subtree
+#    4ff: value(s)
 
 
 empty : List I64
 empty =
-    emptyWithConfig 1
+    emptyWithConfig 1 1
 
 
-emptyWithConfig : I64 -> List I64
-emptyWithConfig = \nodes ->
-    [ 0, 0, nodes, 4 ]
+emptyWithConfig : I64, I64 -> List I64
+emptyWithConfig = \nodesToAllocate, valsPerNode ->
+    [ 0, 0, 0, nodesToAllocate, valsPerNode, 6 ]
 
 
-allocNodes : List I64 -> I64
-allocNodes = \tree ->
+foundNode : List I64 -> I64
+foundNode = \tree ->
+    read tree 1
+
+
+setFoundNode : List I64, I64 -> List I64
+setFoundNode = \tree, val ->
+    List.set tree 1 val
+
+
+insertedNode : List I64 -> I64
+insertedNode = \tree ->
     read tree 2
+
+
+setInsertedNode : List I64, I64 -> List I64
+setInsertedNode = \tree, val ->
+    List.set tree 2 val
+
+
+configNodesToAllocate : List I64 -> I64
+configNodesToAllocate = \tree ->
+    read tree 3
+
+
+configValsPerNode : List I64 -> I64
+configValsPerNode = \tree ->
+    read tree 4
 
 
 lastIndex : List I64 -> I64
 lastIndex = \tree ->
-    read tree 3
+    read tree 5
 
 
 setLastIndex : List I64, I64 -> List I64
 setLastIndex = \tree, val ->
-    List.set tree 3 val
+    List.set tree 5 val
 
 
 size : List I64 -> I64
 size = \tree ->
-    when (lastIndex tree - 4) // 5 is
+    when (lastIndex tree - 6) // (internalNodeSize tree) is
         Ok len -> len
         _ -> 0
 
 
-isEmpty : List I64 -> Bool
-isEmpty = \tree ->
-    size tree == 0
+internalNodeSize : List I64 -> I64
+internalNodeSize = \tree ->
+    4 + configValsPerNode tree
 
 
-singleton : I64, I64 -> List I64
-singleton = \key, val ->
-    [ 4, 0, 1, 9, key, val, 2, 0, 0 ]
+firstP : List I64 -> I64
+firstP = \tree ->
+    firstPos = 6
+    if firstPos < lastIndex tree then
+        firstPos
+    else
+        0
+
+
+nextP : List I64, I64 -> I64
+nextP = \tree, pos ->
+    nextPos = pos + internalNodeSize tree
+    if nextPos < lastIndex tree then
+        nextPos
+    else
+        0
+
+
+keyP : List I64, I64 -> I64
+keyP = \tree, pos ->
+    getNodeKey tree pos
 
 
 get : List I64, I64 -> Result I64 I64
 get = \tree, key ->
-    ptr = 0
-    node = getPtrNode tree ptr
-
-    getHelper tree node key
+    getN tree key 0
 
 
-getHelper : List I64, I64, I64 -> Result I64 I64
-getHelper = \tree, node, key ->
-    if node == 0 then
-        Err key
+getN : List I64, I64, I64 -> Result I64 I64
+getN = \tree, key, num ->
+    node = find tree key
+    if node > 0 then
+        Ok (getNodeVal tree node num)
     else
+        Err key
+
+
+find : List I64, I64 -> I64
+find = \tree, key ->
+    root = getPtrNode tree 0
+    findHelper tree root key
+
+
+findHelper : List I64, I64, I64 -> I64
+findHelper = \tree, node, key ->
+    if node > 0 then
         nodeKey = getNodeKey tree node
         if key < nodeKey then
-            lftNode = getNodeLft tree node
-            getHelper tree lftNode key
+            findHelper tree (getNodeLft tree node) key
         else if key > nodeKey then
-            rgtNode = getNodeRgt tree node
-            getHelper tree rgtNode key
+            findHelper tree (getNodeRgt tree node) key
         else
-            val = getNodeVal tree node
-            Ok val
+            node
+    else
+        0
 
 
 insert : List I64, I64, I64 -> List I64
 insert = \tree, key, val ->
+    insertN tree key 0 val
+
+
+insertN : List I64, I64, I64, I64 -> List I64
+insertN = \tree, key, num, val ->
+    newTree = insertP tree key
+    node = foundNode newTree
+    setNodeVal newTree node num val
+
+
+insertP : List I64, I64 -> List I64
+insertP = \tree, key ->
     ptrOut = 0
     ptrIn = 0
 
     tree
-        |> setInserted 0
-        |> insertHelp ptrOut ptrIn key val
+        |> setInsertedNode 0
+        |> insertHelper ptrOut ptrIn key
         |> setPtrCol ptrOut 2
 
 
-insertHelp : List I64, I64, I64, I64, I64 -> List I64
-insertHelp = \tree, ptrOut, ptrIn, key, val ->
+insertHelper : List I64, I64, I64, I64 -> List I64
+insertHelper = \tree, ptrOut, ptrIn, key ->
     when getPtrNode tree ptrIn is
         0 ->
-            addNode tree ptrOut key val 1 0 0
+            addNode tree ptrOut key
 
         node ->
             nodeKey = getNodeKey tree node
             if key < nodeKey then
-                lftIdx = node + 3
+                lftIdx = node + 2
                 tree
-                    |> insertHelp lftIdx lftIdx key val
+                    |> insertHelper lftIdx lftIdx key
                     |> balance ptrOut node
             else if key > nodeKey then
-                rgtIdx = node + 4
+                rgtIdx = node + 3
                 tree
-                    |> insertHelp rgtIdx rgtIdx key val
+                    |> insertHelper rgtIdx rgtIdx key
                     |> balance ptrOut node
             else
-                setNodeVal tree node val
+                setFoundNode tree node
+
+
+addNode : List I64, I64, I64 -> List I64
+addNode = \tree, ptrOut, key ->
+    node = lastIndex tree
+    nodeSize = internalNodeSize tree
+
+    newTree =
+        if node < List.len tree then
+            tree
+        else
+            buffer = List.repeat (configNodesToAllocate tree * nodeSize) 0
+            List.concat tree buffer
+
+    newTree
+        |> setNodeKey node key
+        |> setNodeCol node 1
+        |> setNodeLft node 0
+        |> setNodeRgt node 0
+        |> setInsertedNode node
+        |> setFoundNode node
+        |> setLastIndex (node + nodeSize)
+        |> setPtrNode ptrOut node
 
 
 balance : List I64, I64, I64 -> List I64
 balance = \tree, ptrOut, node ->
-    if inserted tree then
+    if insertedNode tree > 0 then
         rgtNode = getNodeRgt tree node
         rgtCol = getNodeCol tree rgtNode
         lftNode = getNodeLft tree node
@@ -155,62 +254,62 @@ balance = \tree, ptrOut, node ->
         tree
 
 
-addNode = \tree, ptrOut, key, val, col, lft, rgt ->
-    node = lastIndex tree
-
-    newTree =
-        if node < List.len tree then
-            tree
-        else
-            buffer = List.repeat (5 * allocNodes tree) 0
-            List.concat tree buffer
-
-    newTree
-        |> List.set (node + 0) key
-        |> List.set (node + 1) val
-        |> List.set (node + 2) col
-        |> List.set (node + 3) lft
-        |> List.set (node + 4) rgt
-        |> setLastIndex (node + 5)
-        |> setInserted 1
-        |> setPtrNode ptrOut node
+setI : List I64, I64, I64 -> List I64
+setI = \tree, num, val ->
+    node = foundNode tree
+    setNodeVal tree node num val
 
 
-setInserted : List I64, I64 -> List I64
-setInserted = \tree, flg ->
-    List.set tree 1 flg
+getP : List I64, I64, I64 -> I64
+getP = \tree, node, num ->
+    getNodeVal tree node num
 
 
-inserted : List I64 -> Bool
-inserted = \tree ->
-    read tree 1 > 0
+setP : List I64, I64, I64, I64 -> List I64
+setP = \tree, node, num, val ->
+    setNodeVal tree node num val
 
 
-toList : List I64 -> List I64
-toList = \tree ->
+keys : List I64 -> List I64
+keys = \tree ->
+    walk tree (\key, _val, result -> List.append result key) []
+
+
+vals : List I64 -> List I64
+vals = \tree ->
+    walk tree (\_key, val, result -> List.append result val) []
+
+
+walk : List I64, (I64, I64, a -> a), a -> a
+walk = \tree, f, init ->
     rootNode = getPtrNode tree 0
-    toListHelper [] tree rootNode
+    walkHelper init tree f rootNode
 
 
-toListHelper : List I64, List I64, I64 -> List I64
-toListHelper = \result, tree, node ->
+walkHelper : a, List I64, (I64, I64, a -> a), I64 -> a
+walkHelper = \result, tree, f, node ->
     if node == 0 then
         result
     else
+        left = walkHelper result tree f (getNodeLft tree node)
+        this = f (getNodeKey tree node) (getNodeVal tree node 0) left
+        walkHelper this tree f (getNodeRgt tree node)
+
+
+walkP : List I64, (I64, List I64, I64, a -> a), a -> a
+walkP = \tree, f, init ->
+    rootNode = getPtrNode tree 0
+    walkPHelper init tree f rootNode
+
+
+walkPHelper : a, List I64, (I64, List I64, I64, a -> a), I64 -> a
+walkPHelper = \result, tree, f, node ->
+    if node == 0 then
         result
-            |> toListHelper tree (getNodeLft tree node)
-            |> List.append (getNodeVal tree node)
-            |> toListHelper tree (getNodeRgt tree node)
-
-
-#getPtrKey : List I64, I64 -> I64
-#getPtrKey = \tree, ptrIn ->
-#    getPtr tree ptrIn 0
-
-
-#setPtrKey : List I64, I64, I64 -> List I64
-#setPtrKey = \tree, ptrIn, key ->
-#    setPtr tree ptrIn 0 key
+    else
+        left = walkPHelper result tree f (getNodeLft tree node)
+        this = f (getNodeKey tree node) tree node left
+        walkPHelper this tree f (getNodeRgt tree node)
 
 
 getNodeKey : List I64, I64 -> I64
@@ -218,95 +317,54 @@ getNodeKey = \tree, node ->
     getNode tree node 0
 
 
-#setNodeKey : List I64, I64, I64 -> List I64
-#setNodeKey = \tree, node, key ->
-#    setNode tree node 0 key
-
-
-#getPtrVal : List I64, I64 -> I64
-#getPtrVal = \tree, ptrIn ->
-#    getPtr tree ptrIn 1
-
-
-#setPtrVal : List I64, I64, I64 -> List I64
-#setPtrVal = \tree, ptrIn, val ->
-#    setPtr tree ptrIn 1 val
-
-
-getNodeVal : List I64, I64 -> I64
-getNodeVal = \tree, node ->
-    getNode tree node 1
-
-
-setNodeVal : List I64, I64, I64 -> List I64
-setNodeVal = \tree, node, val ->
-    setNode tree node 1 val
-
-
-#getPtrCol : List I64, I64 -> I64
-#getPtrCol = \tree, ptrIn ->
-#    getPtr tree ptrIn 2
+setNodeKey : List I64, I64, I64 -> List I64
+setNodeKey = \tree, node, key ->
+    setNode tree node 0 key
 
 
 setPtrCol : List I64, I64, I64 -> List I64
 setPtrCol = \tree, ptrIn, col ->
-    setPtr tree ptrIn 2 col
+    setPtr tree ptrIn 1 col
 
 
 getNodeCol : List I64, I64 -> I64
 getNodeCol = \tree, node ->
-    getNode tree node 2
+    getNode tree node 1
 
 
 setNodeCol : List I64, I64, I64 -> List I64
 setNodeCol = \tree, node, col ->
-    setNode tree node 2 col
-
-
-#getPtrLft : List I64, I64 -> I64
-#getPtrLft = \tree, ptrIn ->
-#    getPtr tree ptrIn 3
-
-
-#setPtrLft : List I64, I64, I64 -> List I64
-#setPtrLft = \tree, ptrIn, lft ->
-#    setPtr tree ptrIn 3 lft
+    setNode tree node 1 col
 
 
 getNodeLft : List I64, I64 -> I64
 getNodeLft = \tree, node ->
-    getNode tree node 3
+    getNode tree node 2
 
 
 setNodeLft : List I64, I64, I64 -> List I64
 setNodeLft = \tree, node, lft ->
-    setNode tree node 3 lft
-
-
-#getPtrRgt : List I64, I64 -> I64
-#getPtrRgt = \tree, ptrIn ->
-#    getPtr tree ptrIn 4
-
-
-#setPtrRgt : List I64, I64, I64 -> List I64
-#setPtrRgt = \tree, ptrIn, rgt ->
-#    setPtr tree ptrIn 4 rgt
+    setNode tree node 2 lft
 
 
 getNodeRgt : List I64, I64 -> I64
 getNodeRgt = \tree, node ->
-    getNode tree node 4
+    getNode tree node 3
 
 
 setNodeRgt : List I64, I64, I64 -> List I64
 setNodeRgt = \tree, node, rgt ->
-    setNode tree node 4 rgt
+    setNode tree node 3 rgt
 
 
-#getPtr : List I64, I64, I64 -> I64
-#getPtr = \tree, ptrIn, off ->
-#    node = getPtrNode tree ptrIn
-#    getNode tree node off
+getNodeVal : List I64, I64, I64 -> I64
+getNodeVal = \tree, node, num ->
+    getNode tree node (4 + num)
+
+
+setNodeVal : List I64, I64, I64, I64 -> List I64
+setNodeVal = \tree, node, num, val ->
+    setNode tree node (4 + num) val
 
 
 setPtr : List I64, I64, I64, I64 -> List I64

@@ -1,5 +1,5 @@
 interface ListSet
-    exposes [ empty, emptyWithConfig, isEmpty, size, singleton, member, insert, inserted, toList ]
+    exposes [ empty, emptyWithConfig, size, insert, inserted, member, toList ]
     imports []
 
 
@@ -33,16 +33,6 @@ size = \tree ->
     when (lastIndex tree - 4) // 4 is
         Ok len -> len
         _ -> 0
-
-
-isEmpty : List I64 -> Bool
-isEmpty = \tree ->
-    size tree == 0
-
-
-singleton : I64 -> List I64
-singleton = \val ->
-    [ 4, 0, 1, 8, val, 2, 0, 0 ]
 
 
 member : List I64, I64 -> Bool
