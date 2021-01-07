@@ -1,8 +1,8 @@
 interface ListTree
     exposes
-        [ empty, emptyWithConfig, size
-        , insert, insertN, insertP
-        , get, getN, find, setI, getP, setP
+        [ empty, size
+        , insert, insertN, insertP, inserted
+        , get, getN, find, getI, setI, getP, setP
         , firstP, nextP, keyP
         , keys, vals, walk, walkP
         ]
@@ -25,13 +25,8 @@ interface ListTree
 #    4ff: value(s)
 
 
-empty : List I64
-empty =
-    emptyWithConfig 1 1
-
-
-emptyWithConfig : I64, I64 -> List I64
-emptyWithConfig = \nodesToAllocate, valsPerNode ->
+empty : I64, I64 -> List I64
+empty = \nodesToAllocate, valsPerNode ->
     [ 0, 0, 0, nodesToAllocate, valsPerNode, 6 ]
 
 
@@ -214,7 +209,7 @@ addNode = \tree, ptrOut, key ->
 
 balance : List I64, I64, I64 -> List I64
 balance = \tree, ptrOut, node ->
-    if insertedNode tree > 0 then
+    if inserted tree then
         rgtNode = getNodeRgt tree node
         rgtCol = getNodeCol tree rgtNode
         lftNode = getNodeLft tree node
@@ -252,6 +247,17 @@ balance = \tree, ptrOut, node ->
                 setPtrNode tree ptrOut node
     else
         tree
+
+
+inserted : List I64 -> Bool
+inserted = \tree ->
+    insertedNode tree > 0
+
+
+getI : List I64, I64 -> I64
+getI = \tree, num ->
+    node = foundNode tree
+    getNodeVal tree node num
 
 
 setI : List I64, I64, I64 -> List I64
